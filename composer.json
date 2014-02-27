@@ -1,0 +1,27 @@
+{
+    "name": "webb4you/crawler",
+    "authors": [
+        {
+            "name": "Ilan Rivers",
+            "email": "ilan@webb4you.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    
+    "require": {
+		"zendframework/zend-http": "~2.2",
+		"zendframework/zend-debug": "~2.2",
+        "webb4you/dom-selector" : "master"
+	},
+	"repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/webb4you/DomSelector.git"
+        }
+    ],
+    "autoload": {
+        "psr-0" : {
+			"W4Y\\Crawler" : "src"
+		}
+    }
+}
