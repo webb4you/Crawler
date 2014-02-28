@@ -55,9 +55,9 @@ class Client extends \Zend\Http\Client
         
         try {
             $response = $this->dispatch($this->getRequest(), $response);
-		} catch (Exception $e) {
+        } catch (Exception $e) {
             return false;
-		}		
+        }		
 		
         $this->finalUrl = $this->getUri()->__toString();
         
