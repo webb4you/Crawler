@@ -334,7 +334,7 @@ class Crawler
         while (!empty($this->pendingUrls) && $this->crawlerRunning) {
 
             $followUrl = array_shift($this->pendingUrls);
-			$toFollow = $this->formatUrl($followUrl);
+            $toFollow = $this->formatUrl($followUrl);
 			
             if (!$this->canBeCrawled($toFollow)) {
                 continue;
@@ -342,43 +342,43 @@ class Crawler
 
             // Check for external URL
 			if (!$this->options['externalFollows']) {
-				if (strpos($followUrl, $this->originalHost) === false) {
-					$this->externalUrls[md5($followUrl)] = $followUrl;
-					continue;
-				}
-			}
+                if (strpos($followUrl, $this->originalHost) === false) {
+                    $this->externalUrls[md5($followUrl)] = $followUrl;
+                    continue;
+                }
+            }
 			
-			// Check for max follows
+            // Check for max follows
             if ($this->options['maxUrlFollows'] <= $cntFollows) {
                 $this->crawlerRunning = false;
                 continue;
             }
 			
-			try {
+            try {
                 
                 //$this->getClient()->resetParameters(true);
                 //$this->getClient()->clearCookies();
                 
                 $this->getClient()->setUri($followUrl);
 
-			} catch (\Exception $e) {
+            } catch (\Exception $e) {
                 
-				$this->addToFailed($followUrl);
-				continue;
-			}
+                $this->addToFailed($followUrl);
+                continue;
+            }
             
             
-			try {
+            try {
  
-				$result = $this->_doRequest();
+                $result = $this->_doRequest();
                 if (!$result) {
                     $this->addToFailed($followUrl);
                 }
 
-			} catch (\Exception $e) {
+            } catch (\Exception $e) {
                 
                 // Failed
-				$this->addToFailed($followUrl);
+                $this->addToFailed($followUrl);
                 
                 $dt = array(
                     'id' => md5($followUrl),
@@ -442,19 +442,19 @@ class Crawler
         $response = $this->getClient()->request();
 
         // Uri will change if request was redirected so check
-		// the uri after the request.
-		$lastUrl = $this->formatUrl($this->getClient()->getUri()->__toString());
+        // the uri after the request.
+        $lastUrl = $this->formatUrl($this->getClient()->getUri()->__toString());
 
         // Response code
         $responseCode = $response->getStatusCode();
 
-		// Add to crawled url's
+        // Add to crawled url's
         $oUrl = array(
-			'id' => md5($currentUrl),
-			'url' => $currentUrl,
-			'finalUrl' => $lastUrl,
-			'status' => $responseCode,
-		);
+            'id' => md5($currentUrl),
+            'url' => $currentUrl,
+            'finalUrl' => $lastUrl,
+            'status' => $responseCode,
+        );
         
         $this->setLastRequestData($oUrl);
         
@@ -546,14 +546,14 @@ class Crawler
     {
         $postSlash 	= '';
         
-		// Remove the port from the url
+        // Remove the port from the url
         $url = preg_replace('#\:[0-9]{2,4}#', '', $url);
 
-		// Check for a file extension in URL or query string.
+        // Check for a file extension in URL or query string.
         if (preg_match('#\/?.*\.[a-zA-Z]{2,4}(?!\/)$|\?.*#', $url)) {
             
-			// Remove the slash if the url ends with one.
-			$url = rtrim($url, '/');
+            // Remove the slash if the url ends with one.
+            $url = rtrim($url, '/');
             
         }
         
