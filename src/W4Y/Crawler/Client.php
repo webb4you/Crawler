@@ -12,8 +12,8 @@ use W4Y\Dom\Selector;
  */
 class Client extends \Zend\Http\Client
 {
-	/** @var $body */
-	private $body = null;
+    /** @var $body */
+    private $body = null;
     
     /** @var string|null */
     private $curResponse = null;
