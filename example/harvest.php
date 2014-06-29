@@ -49,9 +49,11 @@ $harvester->setFilter($filter);
 
 // Set crawler plugin / harvester
 // Other plugins can also be assigned to.
-$crawler->setPlugin($harvester);
+//$crawler->setPlugin($harvester);
 
 // Start crawling
 $crawler->crawl();
 
 echo $harvester->getNewLine() . 'CRAWLED LAST::<pre>' . print_r($crawler->getLastRequestData(), 1);
+
+echo '<pre>' . print_r($crawler->getCrawledUrls(), 1);
