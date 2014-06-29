@@ -3,16 +3,19 @@
     "authors": [
         {
             "name": "Ilan Rivers",
-            "email": "ilan@webb4you.com"
+            "email": "ilan.rivers@outlook.com"
         }
     ],
     "minimum-stability": "dev",
-    
+
     "require": {
 		"zendframework/zend-http": "~2.2",
 		"zendframework/zend-debug": "~2.2",
         "webb4you/dom-selector" : "master"
 	},
+    "require-dev":{
+        "phpunit/phpunit": "4.1.*"
+    },
 	"repositories": [
         {
             "type": "vcs",

@@ -1,4 +1,5 @@
 composer.phar
+.idea
 vendor
 test.php
 example/log/*
