@@ -1,7 +1,6 @@
 <?php
 namespace W4Y\Crawler;
 
-use SebastianBergmann\Exporter\Exception;
 use W4Y\Crawler\Plugin;
 use Zend\Http\Request;
 

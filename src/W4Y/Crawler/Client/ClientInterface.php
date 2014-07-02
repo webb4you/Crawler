@@ -1,6 +1,8 @@
 <?php
 namespace W4Y\Crawler\Client;
 
+use W4Y\Crawler\Response\ResponseInterface;
+
 /**
  * ClientInterface
  *
@@ -8,5 +10,7 @@ namespace W4Y\Crawler\Client;
 interface ClientInterface
 {
     public function setUrl($url);
+    public function getUrl();
     public function request();
+    public function getResponseCode();
 }

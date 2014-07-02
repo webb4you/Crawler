@@ -1,6 +1,7 @@
 <?php
 namespace W4Y\Crawler\Client;
 
+use W4Y\Crawler\Response\ResponseInterface;
 use W4Y\Crawler\Response\Response;
 
 /**
@@ -10,12 +11,18 @@ use W4Y\Crawler\Response\Response;
 class Client implements ClientInterface
 {
     private $url;
-    private $statusCode;
     private $body;
+    private $responseCode;
+    private $response;
 
     public function setUrl($url)
     {
         $this->url = $url;
+    }
+
+    public function getUrl()
+    {
+        return $this->url;
     }
 
     public function request()
@@ -24,29 +31,40 @@ class Client implements ClientInterface
             throw new \Exception('You must first set a URL to request.');
         }
 
-        $this->setStatusCode(200);
-        $this->setBody('Body');
+        $status = file_get_contents($this->url);
+        if (!empty($status)) {
+            $this->setBody($status);
+            $this->setResponseCode(200);
+        }
 
-        return new Response($this);
+        return $this;
     }
 
-    private function setStatusCode($code)
+    public function setResponseCode($code)
     {
-        $this->statusCode = $code;
+        $this->responseCode = $code;
     }
 
-    private function setBody($body)
+    public function getResponseCode()
+    {
+        return $this->responseCode;
+    }
+
+    public function setBody($body)
     {
         $this->body = $body;
     }
 
-    public function getStatusCode()
-    {
-        return $this->getStatusCode();
-    }
-
     public function getBody()
     {
+        if (null === $this->body) {
+            throw new \Exception('You must first do a request.');
+        }
+
+        if (empty($this->body)) {
+            return '';
+        }
+
         return $this->body;
     }
 }
