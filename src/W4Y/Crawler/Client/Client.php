@@ -25,6 +25,20 @@ class Client implements ClientInterface
         return $this->url;
     }
 
+    public function getFinalUrl()
+    {
+        return $this->url;
+    }
+
+    public function isResponseSuccess()
+    {
+        if (200 === $this->getResponseCode()) {
+            return true;
+        }
+
+        return false;
+    }
+
     public function request()
     {
         if (empty($this->url)) {

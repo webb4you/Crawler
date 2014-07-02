@@ -27,8 +27,7 @@ class HarvestPlugin extends W4Y\Crawler\Plugin\Harvester
 
     public function preRequest(Crawler $crawler)
     {
-        $c = $crawler->getClient()->getAdapter()->getConfig();
-        echo 'Crawling From : ' . (empty($c['proxy_host']) ? 'LocalHost' : $c['proxy_host']);
+        echo 'Crawling From : ' . get_class($crawler->getClient()) . PHP_EOL;
         echo self::getNewLine();
     }
 

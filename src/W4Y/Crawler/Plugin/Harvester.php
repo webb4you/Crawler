@@ -97,7 +97,7 @@ class Harvester extends AbstractHarvester implements PluginInterface
      */
     public function onSuccess(Crawler $crawler)
     {
-        $url = $crawler->getClient()->getUri()->__toString();
+        $url = $crawler->getClient()->getUrl();
 
         if ($this->canBeHarvested($url)) {
 

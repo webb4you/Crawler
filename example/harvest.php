@@ -4,7 +4,7 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 require __DIR__ . '/HarvestPlugin.php';
 
 use Zend\Http\Client\Adapter\Proxy;
-use W4Y\Crawler\Client;
+use W4Y\Crawler\Client\Client;
 use W4Y\Crawler\Crawler;
 use W4Y\Crawler\Filter;
 
@@ -13,7 +13,9 @@ $crawler = new Crawler(array(
     'recursiveCrawl' => false, // Should the crawler follow other URL's on the page.
     'maxUrlFollows' => 10, // Maximum amount of URL's to follow.
     'externalFollows' => false // Follow URL's that lead to an external resource.
-));
+), new Client());
+
+
 
 // Add URL's to crawl
 $crawler->addToPending('http://en.wikipedia.org/wiki/Web_crawler');
@@ -49,7 +51,7 @@ $harvester->setFilter($filter);
 
 // Set crawler plugin / harvester
 // Other plugins can also be assigned to.
-//$crawler->setPlugin($harvester);
+$crawler->setPlugin($harvester);
 
 // Start crawling
 $crawler->crawl();
