@@ -25,9 +25,10 @@ class Crawler
 
     private $originalHost;
 
-    private $requestUrlFilter = array();
-
     private $lastRequestData = array();
+
+    /** @var array Filter[] */
+    private $requestUrlFilter = array();
 
     /** @var array PluginInterface[] */
     private $plugins = array();
@@ -78,7 +79,7 @@ class Crawler
     public function getList($listType)
     {
         if (!property_exists($this, $listType)) {
-            throw new \Exception(sprintf('Unrecognized URL Type %s.', $listType));
+            throw new \Exception(sprintf('Unrecognized List Type %s.', $listType));
         }
 
         return $this->$listType;
@@ -507,43 +508,43 @@ class Crawler
         $this->addToCrawled($oUrl);
 
         // Verify response
-        if ($this->getClient()->isResponseSuccess()) {
+        if (!$this->getClient()->isResponseSuccess()) {
 
-            // TODO Dont add urls that are already in the crawled URL array. array_intersect_key
-
-            $this->parser->setDomain($finalUrl);
-            $links = $this->parser->getUrls();
-
-            $this->addToFoundUrls($currentUrl, $links);
-
-            $isRecursiveCrawl = $this->getOption('recursiveCrawl');
-            if (!empty($isRecursiveCrawl)) {
-
-                // Filter URL's
-                $requestUrlFilter = $this->getRequestFilter();
-                $links = $this->filterUrlList($requestUrlFilter, $links);
-
-                foreach ($links as $l) {
-
-                    // Add to pending queue only if limit was not reached else
-                    // add url to backlog so we know what was not crawled.
-                    // @todo why a max url que, should just keep track of how many urls were crawled.
-                    $pendingUrls = $this->getPending();
-                    $maxUrlQue = $this->getOption('maxUrlQue');
-                    if (count($pendingUrls) < $maxUrlQue) {
-                        $this->addToPending($l->url);
-                    } else {
-                        $this->addToPendingBacklog($l->url);
-                    }
-                }
-            }
-
-            // Execute onSuccess
-            $this->executePlugin('onSuccess');
-
-        } else {
             // Execute onFailure
             $this->executePlugin('onFailure');
+            return false;
+        }
+
+        // Execute onSuccess
+        $this->executePlugin('onSuccess');
+
+        // TODO Dont add urls that are already in the crawled URL array. array_intersect_key
+
+        $this->parser->setDomain($finalUrl);
+        $links = $this->parser->getUrls();
+
+        $this->addToFoundUrls($currentUrl, $links);
+
+        $isRecursiveCrawl = $this->getOption('recursiveCrawl');
+        if (!empty($isRecursiveCrawl)) {
+
+            // Filter URL's
+            $requestUrlFilter = $this->getRequestFilter();
+            $links = $this->filterUrlList($requestUrlFilter, $links);
+
+            foreach ($links as $l) {
+
+                // Add to pending queue only if limit was not reached else
+                // add url to backlog so we know what was not crawled.
+                // @todo why a max url que, should just keep track of how many urls were crawled.
+                $pendingUrls = $this->getPending();
+                $maxUrlQue = $this->getOption('maxUrlQue');
+                if (count($pendingUrls) < $maxUrlQue) {
+                    $this->addToPending($l->url);
+                } else {
+                    $this->addToPendingBacklog($l->url);
+                }
+            }
         }
 
         // Execute postRequest
