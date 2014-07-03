@@ -1,6 +1,7 @@
 <?php
 namespace W4Y\Tests\Crawler;
 use W4Y\Crawler\Crawler;
+use W4Y\Tests\Crawler\Client\MockClient;
 
 class CrawlerTest extends \PHPUnit_Framework_TestCase
 {
@@ -10,6 +11,9 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
     public function setUp()
     {
         $this->crawler = new Crawler();
+
+        $client = new MockClient();
+        $this->crawler->setClient($client);
     }
 
     public function testCanAddPendingUrls()

@@ -68,7 +68,10 @@ class Crawler
         $this->options = array_merge($defaults, $options);
 
         $this->parser = new Parser();
-        $this->setClient($client);
+
+        if (null !== $client) {
+            $this->setClient($client);
+        }
     }
 
     public function setParser()
