@@ -8,18 +8,27 @@ use W4Y\Crawler\Client\Client;
 use W4Y\Crawler\Crawler;
 use W4Y\Crawler\Filter;
 
+$client1 = new Client();
+$client1->setName('Client 1');
+
+$client2 = new Client();
+$client2->setName('Client 2');
+
 // Initialize Crawler
 $crawler = new Crawler(array(
     'recursiveCrawl' => false, // Should the crawler follow other URL's on the page.
     'maxUrlFollows' => 10, // Maximum amount of URL's to follow.
     'externalFollows' => false // Follow URL's that lead to an external resource.
-), new Client());
+));
 
+$crawler->setClient($client1);
+$crawler->setClient($client2);
 
 
 // Add URL's to crawl
 $crawler->addToPending('http://en.wikipedia.org/wiki/Web_crawler');
 $crawler->addToPending('http://en.wikipedia.org/wiki/DataparkSearch');
+$crawler->addToPending('http://en.wikipedia.org/wiki/DataparkSearching');
 
 $filter = new Filter('MyRequestFilter', array(
     array('match' => '#movies\/[0-9]+#', 'type' => Filter::MUST_MATCH)

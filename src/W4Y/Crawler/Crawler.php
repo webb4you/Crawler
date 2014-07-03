@@ -186,6 +186,46 @@ class Crawler
     }
 
     /**
+     * Return all the URL's actually crawled.
+     *
+     * @return array
+     */
+    public function getCrawledUrls()
+    {
+        return $this->crawledUrls;
+    }
+
+    /**
+     * Return all the URL's that were found during the crawl.
+     *
+     * @return array
+     */
+    public function getFoundUrls()
+    {
+        return $this->crawlerFoundUrls;
+    }
+
+    /**
+     * Get URL's that were pending to be crawled but were not.
+     *
+     * @return array
+     */
+    public function getPending()
+    {
+        return $this->pendingUrls;
+    }
+
+    /**
+     * Get URL's that were pending to be crawled but were not.
+     *
+     * @return array
+     */
+    public function getPendingBacklog()
+    {
+        return $this->pendingBacklog;
+    }
+
+    /**
      * Set request filter
      *
      * @param Filter $filter
@@ -242,9 +282,13 @@ class Crawler
         return $this;
     }
 
-    public function setClient(ClientInterface $client)
+    public function setClient(ClientInterface $client, $name = null)
     {
-        $this->clients[] = $client;
+        if (empty($name)) {
+            $name = get_class($client) . '_' . uniqid() ;
+        }
+
+        $this->clients[$name] = $client;
 
         return $this;
     }
@@ -277,6 +321,7 @@ class Crawler
     {
         $this->clients = array();
         $this->client = null;
+
         return $this;
     }
 
@@ -320,14 +365,16 @@ class Crawler
             throw new \Exception('You have to set a client.');
         }
 
-        if (count($clients) > 1) {
+        // All clients have been used, so reset with original clients.
+        if (empty($this->clients)) {
+            $this->clients = $clients;
+        }
 
+        if (count($clients) > 1) {
             $client = array_shift($this->clients);
             $this->client = $client;
-
         } else if (null === $this->client) {
-
-            $this->client = $this->clients[0];
+            $this->client = array_shift($clients);
         }
     }
 
@@ -360,19 +407,24 @@ class Crawler
         $this->originalHost = $uri->getHost();
 
 
-        $this->crawlerRunning = true;
-
-        // Set current client, if none was set with setClient then
-        // we use the default.
+        // Set current client to use, if we have multiple they will be all used per url.
         $clients = $this->getClients();
         $this->roundRobinClient($clients);
 
         // Execute preCrawlLoop
         $this->executePlugin('preCrawl');
 
-
+        $maxConsecutiveFails = 500;
+        $failedIterations = 0;
         $cntFollows = 0;
+        $this->crawlerRunning = true;
+
         while (!empty($pendingUrls) && $this->crawlerRunning) {
+
+            $failedIterations++;
+            if ($failedIterations > $maxConsecutiveFails) {
+                $this->crawlerRunning = false;
+            }
 
             // Check for max follows
             if ($this->getOption('maxUrlFollows') <= $cntFollows) {
@@ -396,9 +448,6 @@ class Crawler
             }
 
             try {
-
-                //$this->getClient()->resetParameters(true);
-                //$this->getClient()->clearCookies();
 
                 $this->getClient()->setUrl($followUrl);
 
@@ -436,6 +485,9 @@ class Crawler
 
 			// Increment follows
             $cntFollows++;
+
+            // Reset failed iterations
+            $failedIterations = 0;
 
             $sleepInterval = $this->getOption('sleepInterval');
             if ($sleepInterval) {
@@ -527,7 +579,9 @@ class Crawler
         $links = $this->parser->getUrls();
 
         $this->addToFoundUrls($currentUrl, $links);
+        
 
+        // If we are doing a recursive crawl then add all the found URL's to the queue.
         $isRecursiveCrawl = $this->getOption('recursiveCrawl');
         if (!empty($isRecursiveCrawl)) {
 
@@ -566,46 +620,6 @@ class Crawler
     public function getOptions()
     {
         return $this->options;
-    }
-
-    /**
-     * Return all the URL's actually crawled.
-     *
-     * @return array
-     */
-    public function getCrawledUrls()
-    {
-        return $this->crawledUrls;
-    }
-
-    /**
-     * Return all the URL's that were found during the crawl.
-     *
-     * @return array
-     */
-    public function getFoundUrls()
-    {
-        return $this->crawlerFoundUrls;
-    }
-
-    /**
-     * Get URL's that were pending to be crawled but were not.
-     *
-     * @return array
-     */
-    public function getPending()
-    {
-        return $this->pendingUrls;
-    }
-
-    /**
-     * Get URL's that were pending to be crawled but were not.
-     *
-     * @return array
-     */
-    public function getPendingBacklog()
-    {
-        return $this->pendingBacklog;
     }
 
     /**
@@ -681,18 +695,20 @@ class Crawler
     }
 
     /**
-     * Call a plugin method that is based on the
-     * crawler plugin interface.
+     * Call a plugin method that is based on the crawler plugin interface.
      *
      * @param string $hook
      */
     private function executePlugin($hook)
     {
-        if ($this->getPlugins()) {
-            foreach ($this->getPlugins() as $plugin) {
-                if (method_exists($plugin, $hook)) {
-                    $plugin->$hook($this);
-                }
+        $plugins = $this->getPlugins();
+        if (empty($plugins)) {
+            return;
+        }
+
+        foreach ($plugins as $plugin) {
+            if (method_exists($plugin, $hook)) {
+                $plugin->$hook($this);
             }
         }
     }

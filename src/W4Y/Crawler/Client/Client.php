@@ -11,6 +11,8 @@ class Client implements ClientInterface
     private $body;
     private $responseCode;
 
+    private $name;
+
     public function setUrl($url)
     {
         $this->url = $url;
@@ -76,5 +78,15 @@ class Client implements ClientInterface
         }
 
         return $this->body;
+    }
+
+    public function setName($name)
+    {
+        $this->name = $name;
+    }
+
+    public function getName()
+    {
+        return $this->name;
     }
 }

@@ -44,7 +44,10 @@ class MockClient implements ClientInterface
         if (empty($this->url)) {
             throw new \Exception('You must first set a URL to request.');
         }
+
+        echo PHP_EOL . 'URL::' . $this->url . PHP_EOL;
         echo 'NAME::' . $this->getName() . PHP_EOL;
+
         usleep(100000); // 0.1 seconds
         $this->setBody('MockBody');
         $this->setResponseCode(200);

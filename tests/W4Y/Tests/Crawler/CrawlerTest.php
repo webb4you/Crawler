@@ -11,13 +11,13 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
     public function setUp()
     {
         $this->crawler = new Crawler();
-
-        $client = new MockClient();
-        $this->crawler->setClient($client);
     }
 
     public function testCanAddPendingUrls()
     {
+        $client = new MockClient();
+        $this->crawler->setClient($client);
+
         $url = 'http://www.example.com';
         $url2 = 'http://www.example.com/about.html';
         $this->crawler->addToPending($url);
@@ -50,10 +50,14 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $client2->setName('Client 2');
         $this->crawler->setClient($client2);
 
-        $url = 'http://www.example.com';
-        $url2 = 'http://www.example.com/1.html';
+        $url = 'http://www.example.com/page1.html';
         $this->crawler->addToPending($url);
-        $this->crawler->addToPending($url2);
+
+        $url = 'http://www.example.com/page2.html';
+        $this->crawler->addToPending($url);
+
+        $url = 'http://www.example.com/page3.html';
+        $this->crawler->addToPending($url);
 
         $this->crawler->crawl();
     }
