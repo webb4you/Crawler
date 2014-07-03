@@ -143,7 +143,92 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(2, $client2Cnt);
     }
 
-    public function testCanCrawlAndSaveStats()
+    public function testCanCrawlAndSaveClientStats()
+    {
+        // Client 1
+        $url = 'http://www.example.com/page1.html';
+
+        // Test a success response
+        // -------------------------
+        // Mock Client Interface
+        $client = $this->getMock('W4Y\Crawler\Client\ClientInterface');
+
+        $client->expects($this->once())
+            ->method('getResponseCode')
+            ->will($this->returnValue(200));
+
+        $client->expects($this->any())
+            ->method('isResponseSuccess')
+            ->will($this->returnValue(true));
+
+        // Crawl
+        $this->crawler->setClient($client, 'Client 1');
+        $this->crawler->addToPending($url);
+        $this->crawler->crawl();
+
+        // Fetch client stats
+        $clientStats = $this->crawler->getClientStats();
+        $stats = $clientStats[1];
+
+        $this->assertEquals(1, $stats[Crawler::STATS_SUCCESS]);
+        $this->assertEquals(1, $stats[Crawler::STATS_ATTEMPT]);
+
+
+        // Test a failed response
+        // -------------------------
+        // Mock Client Interface
+        $client = $this->getMock('W4Y\Crawler\Client\ClientInterface');
+
+        $client->expects($this->once())
+            ->method('getResponseCode')
+            ->will($this->returnValue(200));
+
+        $client->expects($this->any())
+            ->method('isResponseSuccess')
+            ->will($this->returnValue(false));
+
+        // Crawl
+        $this->crawler->setClient($client, 'Client 1');
+        $this->crawler->addToPending($url);
+        $this->crawler->crawl();
+
+        // Fetch client stats
+        $clientStats = $this->crawler->getClientStats();
+        $stats = $clientStats[1];
+
+        $this->assertEquals(1, $stats[Crawler::STATS_FAIL]);
+        $this->assertEquals(2, $stats[Crawler::STATS_ATTEMPT]);
+
+
+        // Test a exception
+        // -------------------------
+        // Mock Client Interface
+        $client = $this->getMock('W4Y\Crawler\Client\ClientInterface');
+
+        $client->expects($this->once())
+            ->method('getResponseCode')
+            ->will($this->returnValue(200));
+
+        $client->expects($this->any())
+            ->method('isResponseSuccess')
+            ->will($this->throwException(new \Exception('Invalid response')));
+
+        // Crawl
+        $this->crawler->setClient($client, 'Client 1');
+        $this->crawler->addToPending($url);
+        $this->crawler->crawl();
+
+        // Fetch client stats
+        $clientStats = $this->crawler->getClientStats();
+        $stats = $clientStats[1];
+
+        $this->assertEquals(1, $stats[Crawler::STATS_ERROR]);
+        $this->assertEquals(1, $stats[Crawler::STATS_FAIL]);
+        $this->assertEquals(1, $stats[Crawler::STATS_SUCCESS]);
+        $this->assertEquals(3, $stats[Crawler::STATS_CRAWL]);
+    }
+
+    public function testCanCallPluginSuccessHooks()
     {
         // Set crawler clients
         $this->crawler->setClient(new MockClient(), 'Client 1');
@@ -152,33 +237,62 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $url = 'http://www.example.com/page1.html';
         $this->crawler->addToPending($url);
 
-        // Client 1
-        $url = 'http://www.example.com/page2.html';
-        $this->crawler->addToPending($url);
+        // Mock Plugin Interface
+        $plugin = $this->getMock('W4Y\Crawler\Plugin\PluginInterface');
 
-        // Client 1
-        $url = 'http://www.example.com/page3.html';
-        $this->crawler->addToPending($url);
+        $plugin->expects($this->once())
+            ->method('preCrawl');
 
-        // Client 1
-        $url = 'http://www.example.com/page4.html';
-        $this->crawler->addToPending($url);
+        $plugin->expects($this->once())
+            ->method('preRequest');
 
-        // Client 1
-        $url = 'http://www.example.com/page5.html';
-        $this->crawler->addToPending($url);
+        $plugin->expects($this->once())
+            ->method('onSuccess');
 
-        // Client 1
-        $url = 'http://www.example.com/page6.html';
-        $this->crawler->addToPending($url);
+        $plugin->expects($this->once())
+            ->method('postRequest');
 
-        // Crawl URL's
+        $plugin->expects($this->once())
+            ->method('postCrawl');
+
+        $this->crawler->setPlugin($plugin);
+
         $this->crawler->crawl();
+    }
 
-        // Fetch client stats
-        $clientStats = $this->crawler->getClientStats();
+    public function testCanCallPluginFailHooks()
+    {
+        // Mock Client Interface
+        $client = $this->getMock('W4Y\Crawler\Client\ClientInterface');
+        $client->expects($this->once())
+            ->method('isResponseSuccess')
+            ->will($this->returnValue(false));
 
-        // Client 1 should have crawled 6 URL's.
-        $client1Cnt = $clientStats[1][Crawler::STATS_CRAWL];
+        // Mock Plugin Interface
+        $plugin = $this->getMock('W4Y\Crawler\Plugin\PluginInterface');
+        $plugin->expects($this->once())
+            ->method('preCrawl');
+
+        $plugin->expects($this->once())
+            ->method('preRequest');
+
+        $plugin->expects($this->once())
+            ->method('onFailure');
+
+        $plugin->expects($this->once())
+            ->method('postRequest');
+
+        $plugin->expects($this->once())
+            ->method('postCrawl');
+
+        // Set crawler clients
+        $this->crawler->setClient($client, 'Client 1');
+
+        // Client 1
+        $url = 'http://www.example.com';
+        $this->crawler->addToPending($url);
+
+        $this->crawler->setPlugin($plugin);
+        $this->crawler->crawl();
     }
 }

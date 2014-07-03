@@ -440,9 +440,9 @@ class Crawler
             $this->clientStats[$clientActive][self::STATS_SEQUENCE] = $clientActive;
             $this->clientStats[$clientActive][self::STATS_SUCCESS] = 0;
             $this->clientStats[$clientActive][self::STATS_FAIL] = 0;
+            $this->clientStats[$clientActive][self::STATS_CRAWL] = 0;
             $this->clientStats[$clientActive][self::STATS_ATTEMPT] = 0;
             $this->clientStats[$clientActive][self::STATS_ERROR] = 0;
-            $this->clientStats[$clientActive][self::STATS_CRAWL] = 0;
         }
 
         $this->clientStats[$clientActive][$statsType]++;
@@ -507,7 +507,6 @@ class Crawler
 
             // Get first pending URL.
             $followUrl = $this->getPendingUrl();
-
             if (!$this->canBeCrawled($followUrl)) {
                 continue;
             }
@@ -534,15 +533,21 @@ class Crawler
                 continue;
             }
 
+            // Execute preRequest
+            $this->executePlugin('preRequest');
 
             try {
 
                 $result = $this->_doRequest();
+
                 if (false === $result) {
                     $this->addToFailed($followUrl);
 
                     // Set crawl fail
                     $this->setClientStats(self::STATS_FAIL);
+
+                    // Execute onFailure
+                    $this->executePlugin('onFailure');
                 }
 
             } catch (\Exception $e) {
@@ -562,6 +567,9 @@ class Crawler
 
                 $this->addToCrawled($dt);
             }
+
+            // Execute postRequest
+            $this->executePlugin('postRequest');
 
             // Set crawl attempts
             $this->setClientStats(self::STATS_ATTEMPT);
@@ -614,9 +622,6 @@ class Crawler
     {
         $currentUrl = $this->formatUrl($this->getClient()->getUrl());
 
-        // Execute preRequest
-        $this->executePlugin('preRequest');
-
         // Do the request
         $this->getClient()->request();
 
@@ -650,9 +655,6 @@ class Crawler
 
         // Verify response
         if (!$this->getClient()->isResponseSuccess()) {
-
-            // Execute onFailure
-            $this->executePlugin('onFailure');
             return false;
         }
 
@@ -692,9 +694,6 @@ class Crawler
                 }
             }
         }
-
-        // Execute postRequest
-        $this->executePlugin('postRequest');
     }
 
     public function getOption($option)
