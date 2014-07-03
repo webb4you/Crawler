@@ -1,6 +1,8 @@
 <?php
 namespace W4Y\Crawler;
 
+use W4Y\Crawler\Parser\Parser;
+use W4Y\Crawler\Parser\ParserInterface;
 use W4Y\Crawler\Plugin\PluginInterface;
 use W4Y\Crawler\Client\ClientInterface;
 use W4Y\Crawler\Plugin;
@@ -66,7 +68,7 @@ class Crawler
     const LIST_TYPE_CRAWLED_EXTERNAL = 'externalFollows';
     const LIST_TYPE_EXTERNAL_URL = 'externalUrls';
 
-    public function __construct(array $options = array(), ClientInterface $client = null)
+    public function __construct(array $options = array(), ClientInterface $client = null, ParserInterface $parser = null)
     {
         $defaults = array(
             'maxUrlFollows' => 100,
@@ -79,9 +81,15 @@ class Crawler
 
         $this->options = array_merge($defaults, $options);
 
-        // Set our html parser
-        $this->setParser( new Parser());
+        // Set html parser
+        if (null !== $parser) {
+            $this->setParser($parser);
+        } else {
+            // Default parser
+            $this->setParser(new Parser());
+        }
 
+        // Set client
         if (null !== $client) {
             $this->setClient($client);
         }
@@ -118,7 +126,7 @@ class Crawler
         return $this;
     }
 
-    public function setParser($parser)
+    public function setParser(ParserInterface $parser)
     {
         $this->parser = $parser;
     }
@@ -667,8 +675,9 @@ class Crawler
         // TODO Dont add urls that are already in the crawled URL array. array_intersect_key
 
         $this->parser->setDomain($finalUrl);
-        $links = $this->parser->getUrls();
+        $links = $this->parser->getUrls($this->getClient()->getBody());
 
+        // Add to found list
         $this->addToFoundUrls($currentUrl, $links);
 
 

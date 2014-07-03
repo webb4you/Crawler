@@ -10,6 +10,7 @@ interface ClientInterface
     public function setUrl($url);
     public function getUrl();
     public function request();
+    public function getBody();
     public function getFinalUrl();
     public function getResponseCode();
     public function isResponseSuccess();

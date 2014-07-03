@@ -1,7 +1,7 @@
 <?php
 namespace W4Y\Crawler\Plugin;
 
-use W4Y\Crawler\Harvester\AbstractHarvester;
+use W4Y\Crawler\AbstractHarvester;
 use W4Y\Crawler\Crawler;
 use W4Y\Crawler\Filter;
 

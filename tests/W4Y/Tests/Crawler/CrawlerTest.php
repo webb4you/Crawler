@@ -264,6 +264,7 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
     {
         // Mock Client Interface
         $client = $this->getMock('W4Y\Crawler\Client\ClientInterface');
+
         $client->expects($this->once())
             ->method('isResponseSuccess')
             ->will($this->returnValue(false));
@@ -295,4 +296,16 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $this->crawler->setPlugin($plugin);
         $this->crawler->crawl();
     }
+
+    public function testCanAddFoundUrlsToPending()
+    {
+
+    }
+
+    public function testCanFetchUrlFromPendingQueue()
+    {
+
+    }
+
+
 }

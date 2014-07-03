@@ -1,19 +1,17 @@
 <?php
-namespace W4Y\Crawler;
+namespace W4Y\Crawler\Parser;
 
 use W4Y\Dom\Selector;
 use Zend\Uri\Uri;
 
-class Parser
+class Parser implements ParserInterface
 {
     private $domain;
     private $uri;
 
-    public function __construct($url = null)
+    public function getUri()
     {
-        if (!empty($url)) {
-            $this->setDomain($url);
-        }
+        return $this->uri;
     }
 
     /**
@@ -22,7 +20,7 @@ class Parser
      * @param type $body
      * @return array
      */
-    public function getUrls($body = null)
+    public function getUrls($body)
     {
         if (empty($body)) {
             return array();
@@ -84,7 +82,7 @@ class Parser
      * @param string $body
      * @return array
      */
-    public function getImages($body = null)
+    public function getImages($body)
     {
         if (null === $body) {
             return array();
