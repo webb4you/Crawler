@@ -1,11 +1,8 @@
 <?php
 namespace W4Y\Crawler\Client;
 
-use W4Y\Crawler\Response\ResponseInterface;
-use W4Y\Crawler\Response\Response;
-
 /**
- * Response
+ * Client
  *
  */
 class Client implements ClientInterface
@@ -13,7 +10,6 @@ class Client implements ClientInterface
     private $url;
     private $body;
     private $responseCode;
-    private $response;
 
     public function setUrl($url)
     {

@@ -40,4 +40,22 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $this->assertCount(1, $pendingUrls);
     }
 
+    public function testCanRoundRobinClients()
+    {
+        $client1 = new MockClient();
+        $client1->setName('Client 1');
+        $this->crawler->setClient($client1);
+
+        $client2 = new MockClient();
+        $client2->setName('Client 2');
+        $this->crawler->setClient($client2);
+
+        $url = 'http://www.example.com';
+        $url2 = 'http://www.example.com/1.html';
+        $this->crawler->addToPending($url);
+        $this->crawler->addToPending($url2);
+
+        $this->crawler->crawl();
+    }
+
 }

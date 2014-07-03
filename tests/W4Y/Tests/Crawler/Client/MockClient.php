@@ -13,6 +13,8 @@ class MockClient implements ClientInterface
     private $body;
     private $responseCode;
 
+    private $name;
+
     public function setUrl($url)
     {
         $this->url = $url;
@@ -42,7 +44,7 @@ class MockClient implements ClientInterface
         if (empty($this->url)) {
             throw new \Exception('You must first set a URL to request.');
         }
-
+        echo 'NAME::' . $this->getName() . PHP_EOL;
         usleep(100000); // 0.1 seconds
         $this->setBody('MockBody');
         $this->setResponseCode(200);
@@ -76,5 +78,15 @@ class MockClient implements ClientInterface
         }
 
         return $this->body;
+    }
+
+    public function setName($name)
+    {
+        $this->name = $name;
+    }
+
+    public function getName()
+    {
+        return $this->name;
     }
 }

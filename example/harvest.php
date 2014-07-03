@@ -51,7 +51,7 @@ $harvester->setFilter($filter);
 
 // Set crawler plugin / harvester
 // Other plugins can also be assigned to.
-//$crawler->setPlugin($harvester);
+$crawler->setPlugin($harvester);
 
 // Start crawling
 $crawler->crawl();

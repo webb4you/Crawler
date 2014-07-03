@@ -1,8 +1,6 @@
 <?php
 namespace W4Y\Crawler\Client;
 
-use W4Y\Crawler\Response\ResponseInterface;
-
 /**
  * ClientInterface
  *
