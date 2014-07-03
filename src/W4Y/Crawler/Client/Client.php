@@ -11,8 +11,6 @@ class Client implements ClientInterface
     private $body;
     private $responseCode;
 
-    private $name;
-
     public function setUrl($url)
     {
         $this->url = $url;
@@ -43,10 +41,13 @@ class Client implements ClientInterface
             throw new \Exception('You must first set a URL to request.');
         }
 
-        $status = file_get_contents($this->url);
-        if (!empty($status)) {
+        $status = @file_get_contents($this->url);
+        if (($status)) {
             $this->setBody($status);
             $this->setResponseCode(200);
+        } else {
+            $this->setBody('Error');
+            $this->setResponseCode(404);
         }
 
         return $this;
@@ -78,15 +79,5 @@ class Client implements ClientInterface
         }
 
         return $this->body;
-    }
-
-    public function setName($name)
-    {
-        $this->name = $name;
-    }
-
-    public function getName()
-    {
-        return $this->name;
     }
 }

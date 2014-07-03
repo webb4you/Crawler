@@ -9,10 +9,7 @@ use W4Y\Crawler\Crawler;
 use W4Y\Crawler\Filter;
 
 $client1 = new Client();
-$client1->setName('Client 1');
-
 $client2 = new Client();
-$client2->setName('Client 2');
 
 // Initialize Crawler
 $crawler = new Crawler(array(
@@ -21,8 +18,8 @@ $crawler = new Crawler(array(
     'externalFollows' => false // Follow URL's that lead to an external resource.
 ));
 
-$crawler->setClient($client1);
-$crawler->setClient($client2);
+$crawler->setClient($client1, 'Client 1');
+$crawler->setClient($client2, 'Client 2');
 
 
 // Add URL's to crawl
@@ -60,11 +57,16 @@ $harvester->setFilter($filter);
 
 // Set crawler plugin / harvester
 // Other plugins can also be assigned to.
-$crawler->setPlugin($harvester);
+// $crawler->setPlugin($harvester);
 
 // Start crawling
 $crawler->crawl();
 
+$stats = $crawler->getClientStats();
+
+
 echo $harvester->getNewLine() . 'CRAWLED LAST::<pre>' . print_r($crawler->getLastRequestData(), 1);
+
+echo '<pre>' . print_r($stats, 1);
 
 echo '<pre>' . print_r($crawler->getCrawledUrls(), 1);

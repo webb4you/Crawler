@@ -39,11 +39,23 @@ class Crawler
     /** @var ClientInterface $client */
     private $client;
 
+    private $activeClientQueue;
+
+    private $clientStats = array();
+
     private $crawledIndex = 0;
 
     private $crawlerRunning;
 
     private $parser;
+
+    const STATS_SUCCESS = 'success';
+    const STATS_FAIL = 'fails';
+    const STATS_ERROR = 'errors';
+    const STATS_CRAWL = 'crawls';
+    const STATS_ATTEMPT = 'attempts';
+    const STATS_ID = 'id';
+    const STATS_SEQUENCE = 'sequence';
 
     const LIST_TYPE_PENDING = 'pendingUrls';
     const LIST_TYPE_PENDING_BACKLOG = 'pendingBacklogUrls';
@@ -67,27 +79,20 @@ class Crawler
 
         $this->options = array_merge($defaults, $options);
 
-        $this->parser = new Parser();
+        // Set our html parser
+        $this->setParser( new Parser());
 
         if (null !== $client) {
             $this->setClient($client);
         }
     }
 
-    public function setParser()
-    {
-
-    }
-
-    public function getList($listType)
-    {
-        if (!property_exists($this, $listType)) {
-            throw new \Exception(sprintf('Unrecognized List Type %s.', $listType));
-        }
-
-        return $this->$listType;
-    }
-
+    /**
+     * @param $listType
+     * @param $value
+     * @param null $key
+     * @throws \Exception
+     */
     public function addToList($listType, $value, $key = null)
     {
         if (!property_exists($this, $listType)) {
@@ -97,31 +102,39 @@ class Crawler
         if (!empty($key)) {
             $this->$listType = array_merge($this->$listType, array($key => $value));
         } else {
-
             $value = $this->formatUrl($value);
             $this->$listType = array_merge($this->$listType, array(md5($value) => $value));
         }
     }
 
     /**
-     * Add a url to the queue.
-     *
-     * @param string $url
+     * @param $url
+     * @return $this
      */
     public function addToPending($url)
     {
         $this->addToList(self::LIST_TYPE_PENDING, $url);
+
+        return $this;
     }
 
-    public function getPendingUrl()
+    public function setParser($parser)
     {
-        $pendingUrls = $this->getList(self::LIST_TYPE_PENDING);
-        $url = array_shift($pendingUrls);
+        $this->parser = $parser;
+    }
 
-        // Populate list.
-        $this->pendingUrls = $pendingUrls;
+    /**
+     * @param $listType
+     * @return mixed
+     * @throws \Exception
+     */
+    public function getList($listType)
+    {
+        if (!property_exists($this, $listType)) {
+            throw new \Exception(sprintf('Unrecognized List Type %s.', $listType));
+        }
 
-        return $this->formatUrl($url);
+        return $this->$listType;
     }
 
     /**
@@ -215,6 +228,17 @@ class Crawler
         return $this->pendingUrls;
     }
 
+    public function getPendingUrl()
+    {
+        $pendingUrls = $this->getList(self::LIST_TYPE_PENDING);
+        $url = array_shift($pendingUrls);
+
+        // Populate list.
+        $this->pendingUrls = $pendingUrls;
+
+        return $this->formatUrl($url);
+    }
+
     /**
      * Get URL's that were pending to be crawled but were not.
      *
@@ -282,13 +306,18 @@ class Crawler
         return $this;
     }
 
-    public function setClient(ClientInterface $client, $name = null)
+    /**
+     * @param ClientInterface $client
+     * @param null $identifier
+     * @return $this
+     */
+    public function setClient(ClientInterface $client, $identifier = null)
     {
-        if (empty($name)) {
-            $name = get_class($client) . '_' . uniqid() ;
+        if (empty($identifier)) {
+            $identifier = get_class($client) . '_' . uniqid() ;
         }
 
-        $this->clients[$name] = $client;
+        $this->clients[$identifier] = $client;
 
         return $this;
     }
@@ -356,26 +385,72 @@ class Crawler
     }
 
     /**
-     * @param $clients
+     * Return the array of the currently active client
+     *
+     * @return array
+     */
+    private function getActiveClientDetails()
+    {
+        $clients = $this->getClients();
+        $client = array_slice($clients, ($this->activeClientQueue - 1), 1);
+
+        return $client;
+    }
+
+    private function getActiveClientName()
+    {
+        $client = $this->getActiveClientDetails();
+        $name = current(array_keys($client));
+
+        return $name;
+    }
+
+    /**
+     * Determine the client to use.
+     *
      * @throws \Exception
      */
-    private function roundRobinClient($clients)
+    private function roundRobinClient()
     {
+        $clients = $this->getClients();
+
         if (empty($clients)) {
             throw new \Exception('You have to set a client.');
         }
 
-        // All clients have been used, so reset with original clients.
-        if (empty($this->clients)) {
-            $this->clients = $clients;
+        $maxClients = count($clients);
+        if ((null === $this->activeClientQueue) || ($maxClients == $this->activeClientQueue) ) {
+            $this->activeClientQueue = 1;
+        } else {
+            $this->activeClientQueue++;
         }
 
-        if (count($clients) > 1) {
-            $client = array_shift($this->clients);
-            $this->client = $client;
-        } else if (null === $this->client) {
-            $this->client = array_shift($clients);
+        $client = $this->getActiveClientDetails();
+        $this->client = current($client);
+    }
+
+    private function setClientStats($statsType)
+    {
+        $clientName = $this->getActiveClientName();
+        $clientActive = $this->activeClientQueue;
+
+        // Initialize all stats.
+        if (!isset($this->clientStats[$clientActive])) {
+            $this->clientStats[$clientActive][self::STATS_ID] = $clientName;
+            $this->clientStats[$clientActive][self::STATS_SEQUENCE] = $clientActive;
+            $this->clientStats[$clientActive][self::STATS_SUCCESS] = 0;
+            $this->clientStats[$clientActive][self::STATS_FAIL] = 0;
+            $this->clientStats[$clientActive][self::STATS_ATTEMPT] = 0;
+            $this->clientStats[$clientActive][self::STATS_ERROR] = 0;
+            $this->clientStats[$clientActive][self::STATS_CRAWL] = 0;
         }
+
+        $this->clientStats[$clientActive][$statsType]++;
+    }
+
+    public function getClientStats()
+    {
+        return $this->clientStats;
     }
 
     /**
@@ -406,11 +481,6 @@ class Crawler
         $uri = new \Zend\Uri\Http($firstUrl);
         $this->originalHost = $uri->getHost();
 
-
-        // Set current client to use, if we have multiple they will be all used per url.
-        $clients = $this->getClients();
-        $this->roundRobinClient($clients);
-
         // Execute preCrawlLoop
         $this->executePlugin('preCrawl');
 
@@ -420,6 +490,9 @@ class Crawler
         $this->crawlerRunning = true;
 
         while (!empty($pendingUrls) && $this->crawlerRunning) {
+
+            // Set the client
+            $this->roundRobinClient();
 
             $failedIterations++;
             if ($failedIterations > $maxConsecutiveFails) {
@@ -454,6 +527,10 @@ class Crawler
             } catch (\Exception $e) {
 
                 $this->addToFailed($followUrl);
+
+                // Set crawl error
+                $this->setClientStats(self::STATS_ERROR);
+
                 continue;
             }
 
@@ -461,14 +538,20 @@ class Crawler
             try {
 
                 $result = $this->_doRequest();
-                if (!$result) {
+                if (false === $result) {
                     $this->addToFailed($followUrl);
+
+                    // Set crawl fail
+                    $this->setClientStats(self::STATS_FAIL);
                 }
 
             } catch (\Exception $e) {
 
                 // Failed
                 $this->addToFailed($followUrl);
+
+                // Set crawl fail
+                $this->setClientStats(self::STATS_ERROR);
 
                 $dt = array(
                     'id' => md5($followUrl),
@@ -480,8 +563,8 @@ class Crawler
                 $this->addToCrawled($dt);
             }
 
-            // Change the client
-            $this->roundRobinClient($clients);
+            // Set crawl attempts
+            $this->setClientStats(self::STATS_ATTEMPT);
 
 			// Increment follows
             $cntFollows++;
@@ -562,6 +645,9 @@ class Crawler
         // Add to crawled
         $this->addToCrawled($oUrl);
 
+        // Set crawl amount
+        $this->setClientStats(self::STATS_CRAWL);
+
         // Verify response
         if (!$this->getClient()->isResponseSuccess()) {
 
@@ -569,6 +655,9 @@ class Crawler
             $this->executePlugin('onFailure');
             return false;
         }
+
+        // Set crawl success
+        $this->setClientStats(self::STATS_SUCCESS);
 
         // Execute onSuccess
         $this->executePlugin('onSuccess');
@@ -579,7 +668,7 @@ class Crawler
         $links = $this->parser->getUrls();
 
         $this->addToFoundUrls($currentUrl, $links);
-        
+
 
         // If we are doing a recursive crawl then add all the found URL's to the queue.
         $isRecursiveCrawl = $this->getOption('recursiveCrawl');
