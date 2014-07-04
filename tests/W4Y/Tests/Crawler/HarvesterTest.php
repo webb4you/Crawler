@@ -36,7 +36,7 @@ class HarvesterTest extends \PHPUnit_Framework_TestCase
             $custom
         );
 
-        $data = $this->harvester->processData();
+        $data = $this->harvester->fetchData();
         $data = current($data);
 
         $this->assertArrayHasKey('Rule1', $data);
@@ -73,7 +73,7 @@ class HarvesterTest extends \PHPUnit_Framework_TestCase
         };
 
         // Harvest data
-        $data = $this->harvester->processData($callback);
+        $data = $this->harvester->fetchData($callback);
 
         // When callback is used no data is returned.
         $this->assertNull($data);

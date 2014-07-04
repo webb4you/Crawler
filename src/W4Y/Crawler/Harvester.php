@@ -6,17 +6,17 @@ use W4Y\Dom\Selector;
 class Harvester
 {
     private $harvestedData = null;
-
     private $harvestRules = array();
-
     private $harvestFile = null;
-
-    private $renderType = self::HARVEST_AS_OBJECT;
+    private $renderType = self::HARVEST_AS_ARRAY;
 
     const HARVEST_AS_OBJECT = 0;
-
     const HARVEST_AS_ARRAY = 1;
 
+    /**
+     * @param $type
+     * @throws \Exception
+     */
     public function setRenderType($type)
     {
         if (!in_array($type, array(self::HARVEST_AS_ARRAY, self::HARVEST_AS_OBJECT))) {
@@ -26,11 +26,26 @@ class Harvester
         $this->renderType = $type;
     }
 
+    /**
+     * Set harvest rule
+     *
+     * @param $name
+     * @param $selector
+     */
     public function setHarvestRule($name, $selector)
     {
         $this->harvestRules[$name] = $selector;
     }
 
+    /**
+     * Set a harvest file
+     *
+     * File will be used to save the harvested data.
+     *
+     * @param $fileName
+     * @param bool $appendToFile
+     * @throws \Exception
+     */
     public function setHarvestFile($fileName, $appendToFile = false)
     {
         if (is_file($fileName) && !is_writable($fileName)) {
@@ -50,6 +65,11 @@ class Harvester
         $this->harvestFile = $fileName;
     }
 
+    /**
+     * Get the harvest file
+     *
+     * @return bool|null
+     */
     public function getHarvestFile()
     {
         if (empty($this->harvestFile)) {
@@ -59,22 +79,41 @@ class Harvester
         return $this->harvestFile;
     }
 
+    /**
+     * Get the Harvest rules
+     *
+     * @return array
+     */
     public function getHarvestRules()
     {
         return $this->harvestRules;
     }
 
+    /**
+     * Clear all harvest rules
+     */
     public function clearRules()
     {
         $this->harvestRules = null;
     }
 
+    /**
+     * Clear any harvested data
+     */
     public function clearData()
     {
         $this->harvestedData = null;
     }
 
-    final public function processData()
+    /**
+     * Fetch data.
+     *
+     * Return the previously harvested data. If a callback is passed then
+     * we iterate the harvested data and pass each item one by one to the callback.
+     *
+     * @return array|bool
+     */
+    final public function fetchData()
     {
         $isCallback = false;
 
@@ -125,10 +164,15 @@ class Harvester
         }
     }
 
+    /**
+     * Organize harvest rules
+     *
+     * @param $harvestRules
+     * @return array
+     */
     private function organizeHarvestRules($harvestRules)
     {
         $newData = array();
-
         foreach ($harvestRules as $harvestName => $harvestData) {
             $newData[$harvestName] = $this->organizeHarvestRule($harvestData);
         }
@@ -136,6 +180,12 @@ class Harvester
         return $newData;
     }
 
+    /**
+     * Organize harvest rule
+     *
+     * @param $data
+     * @return array|object
+     */
     private function organizeHarvestRule($data)
     {
         $tmpD = array();
@@ -159,7 +209,18 @@ class Harvester
         return $tmpD;
     }
 
-
+    /**
+     * Harvest
+     *
+     * Parse the string and harvest the data matched by
+     * the harvest rules that were set.
+     * If harvest file was set, save data serialized to the harvest file, otherwise
+     * save in memory.
+     *
+     * @param $key
+     * @param $body
+     * @param array $customData
+     */
     public function harvest($key, $body, $customData = array())
     {
         $data = array();

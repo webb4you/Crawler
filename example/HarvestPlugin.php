@@ -21,7 +21,7 @@ class HarvestPlugin extends W4Y\Crawler\Plugin\Scraper
     public function postCrawl(Crawler $crawler)
     {
         // Data will be processed using a callback.
-        $this->processData(array($this, 'process'));
+        $this->fetchData(array($this, 'process'));
         echo $this->getNewLine() . 'Harvested: ' . self::$dataCnt;
     }
 
