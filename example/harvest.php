@@ -17,9 +17,9 @@ $crawler = new Crawler(array(
     'externalFollows' => false // Follow URL's that lead to an external resource.
 ));
 
-$crawler->setClient($client1, 'Client 1');
-$crawler->setClient($client2, 'Client 2');
 
+$crawler->setClient($client2, 'Client 2');
+$crawler->setClient($client1, 'Client 1');
 
 // Add URL's to crawl
 //$crawler->addToPending('http://en.wikipedia.org/wiki/Web_crawler');

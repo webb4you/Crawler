@@ -24,6 +24,7 @@ class Crawler
     );
 
     private $options = array();
+    private $originalHost;
 
     private $pendingUrls = array();
     private $crawledUrls = array();
@@ -34,24 +35,22 @@ class Crawler
     private $crawlerFoundUrls = array();
     private $crawlerFound = array();
 
-    private $originalHost;
-
     private $activeClientQueue = 1;
     private $clientStats = array();
     private $crawledIndex = 0;
-    private $crawlerRunning;
+    private $crawlerRunning = false;
+
     /** @var ParserInterface $parser */
     private $parser;
+
     /** @var Filter[] $requestFilter */
     private $requestFilter = array();
+
     /** @var PluginInterface[] $plugins */
     private $plugins = array();
+
     /** @var ClientInterface[] $clients */
     private $clients = array();
-    /** @var ClientInterface $client */
-    private $client;
-
-
 
     const STATS_SUCCESS = 'success';
     const STATS_FAIL = 'fails';
@@ -338,7 +337,9 @@ class Crawler
      */
     public function getClient()
     {
-        return $this->client;
+        $client = $this->getClientDetails();
+
+        return current($client);
     }
 
     /**
@@ -483,31 +484,6 @@ class Crawler
     }
 
     /**
-     * Check if a URL can be crawled based.
-     *
-     * @param string $url
-     * @return boolean
-     */
-    private function canBeCrawled($url)
-    {
-        // Check if URL has been already crawled.
-        $crawledUrls = $this->getList(self::LIST_TYPE_CRAWLED);
-        if (array_key_exists($this->hashString($url), $crawledUrls)) {
-            return false;
-        }
-
-        // Check if url has been excluded
-        $excludedUrls = $this->getList(self::LIST_TYPE_EXCLUDED);
-        if (array_key_exists($this->hashString($url), $excludedUrls)) {
-            return false;
-        }
-
-        return true;
-    }
-
-
-
-    /**
      * Format all URL's so that we have consistent URL's
      *
      * @param string $url
@@ -519,26 +495,7 @@ class Crawler
     }
 
     /**
-     * Check if string matches filter.
-     *
-     * @param array $filters
-     * @param string $url
-     * @return boolean
-     */
-    private function filterUrl(array $filters, $url)
-    {
-        // Filter strings
-        foreach ($filters as $filter) {
-            if (!$filter->isValid($url)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Removed URLs (strings) from array based on previously set filters.
+     * Removed URLs (strings) from array based on the set filters.
      *
      * @param array $filters
      * @param array $urls
@@ -564,6 +521,25 @@ class Crawler
     }
 
     /**
+     * Check if string matches filter.
+     *
+     * @param array $filters
+     * @param string $url
+     * @return boolean
+     */
+    private function filterUrl(array $filters, $url)
+    {
+        /** @var Filter $filter */
+        foreach ($filters as $filter) {
+            if (!$filter->isValid($url)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Determine the client to use.
      *
      * @throws \Exception
@@ -583,9 +559,29 @@ class Crawler
             // Only while crawling is running will be round robin the queue
             $this->activeClientQueue++;
         }
+    }
 
-        $client = $this->getClientDetails();
-        $this->client = current($client);
+    /**
+     * Check if a URL can be crawled based.
+     *
+     * @param string $url
+     * @return boolean
+     */
+    private function canBeCrawled($url)
+    {
+        // Check if URL has been already crawled.
+        $crawledUrls = $this->getList(self::LIST_TYPE_CRAWLED);
+        if (array_key_exists($this->hashString($url), $crawledUrls)) {
+            return false;
+        }
+
+        // Check if url has been excluded
+        $excludedUrls = $this->getList(self::LIST_TYPE_EXCLUDED);
+        if (array_key_exists($this->hashString($url), $excludedUrls)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
