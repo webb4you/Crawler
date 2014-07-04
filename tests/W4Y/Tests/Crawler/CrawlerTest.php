@@ -297,15 +297,72 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $this->crawler->crawl();
     }
 
-    public function testCanAddFoundUrlsToPending()
+    public function testOptionRecursiveCrawl()
     {
+        // Set crawler clients
+        $this->crawler->setClient(new MockClient(), 'Client 1');
 
+        $url = 'http://www.example.com';
+        $this->crawler->addToPending($url);
+
+        // Set Mock Parser Interface to return URL's
+        $parser = $this->getMock('W4Y\Crawler\Parser\ParserInterface');
+        $parser->expects($this->once())
+            ->method('getUrls')
+            ->will($this->returnValue($this->getUrlSetOne()));
+
+        // Set parser that will return a fixed set of URL's.
+        $this->crawler->setParser($parser);
+
+        // Only crawl 1 page
+        $this->crawler->setOption('maxUrlFollows', 1);
+
+        // Set recursive crawl so that found URL's are added to pending queue
+        $this->crawler->setOption('recursiveCrawl', true);
+
+        // Crawl
+        $this->crawler->crawl();
+
+        // Parser returned 3 URL's so queue should now have 3.
+        $pendingUrls = $this->crawler->getPending();
+        $this->assertCount(3, $pendingUrls);
     }
 
-    public function testCanFetchUrlFromPendingQueue()
+    public function testOptionMaxUrlFollows()
     {
+        // Set crawler clients
+        $this->crawler->setClient(new MockClient(), 'Client 1');
 
+        $url = 'http://www.example.com';
+        $this->crawler->addToPending($url);
+
+        $url = 'http://www.example.com/page1.html';
+        $this->crawler->addToPending($url);
+
+        $url = 'http://www.example.com/page2.html';
+        $this->crawler->addToPending($url);
+
+        $this->crawler->setOption('maxUrlFollows', 2);
+
+        // Crawl
+        $this->crawler->crawl();
+
+        // Max set at 2 so we have 1 pending url
+        $pendingUrls = $this->crawler->getPending();
+        $this->assertCount(1, $pendingUrls);
     }
 
+    private function getUrlSetOne()
+    {
+        $url1 = array('url' => 'http://www.example.com/pageCrawl.html');
+        $url2 = array('url' => 'http://www.example.com/pageCraw2.html');
+        $url3 = array('url' => 'http://www.example.com/pageCraw3.html');
+
+        return array(
+            (object) $url1,
+            (object) $url2,
+            (object) $url3
+        );
+    }
 
 }

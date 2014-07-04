@@ -14,6 +14,16 @@ use W4Y\Crawler\Plugin;
  */
 class Crawler
 {
+
+    private $defaultOptions = array(
+        'maxUrlFollows' => 100,
+        'maxUrlQue'     => 1000,
+        'externalFollows' => false,
+        'recursiveCrawl' => false,
+        'sleepInterval' => 0,
+        'debug' => false
+    );
+
     private $options = array();
 
     private $pendingUrls = array();
@@ -70,15 +80,7 @@ class Crawler
 
     public function __construct(array $options = array(), ClientInterface $client = null, ParserInterface $parser = null)
     {
-        $defaults = array(
-            'maxUrlFollows' => 100,
-            'maxUrlQue'     => 1000,
-            'externalFollows' => false,
-            'recursiveCrawl' => false,
-            'sleepInterval' => 0,
-            'debug' => false
-        );
-
+        $defaults = $this->getDefaultOptions();
         $this->options = array_merge($defaults, $options);
 
         // Set html parser
@@ -712,6 +714,21 @@ class Crawler
         }
 
         return $this->options[$option];
+    }
+
+    public function setOption($option, $value)
+    {
+        if (!isset($this->options[$option])) {
+            throw new \Exception('The specified option does not exist.');
+        }
+        $this->options[$option] = $value;
+
+        return $this;
+    }
+
+    private function getDefaultOptions()
+    {
+        return $this->defaultOptions;
     }
 
     public function getOptions()
