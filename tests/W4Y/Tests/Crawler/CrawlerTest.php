@@ -456,7 +456,6 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         // Second URL crawled should be contact.html
         $url = current(array_slice($crawledUrls, 1, 1));
 
-
         $this->assertEquals('http://www.example.com/contact.html', $url['url']);
 
         // Should have only crawled 2 urls.
@@ -510,6 +509,52 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
 
         // Should have only crawled 2 urls.
         $this->assertCount(2, $crawledUrls);
+    }
+
+    public function testCanAddFoundUrlsIncludingFilteredOnes()
+    {
+        $filter = new Filter('TestFilter', array(
+           // array('match' => '#contact#', 'type' => Filter::MUST_MATCH),
+            array('match' => 'awl', 'type' => Filter::MUST_CONTAIN)
+        ));
+
+        // Set filter
+        $this->crawler->setRequestFilter($filter);
+
+        // Set crawler clients
+        $this->crawler->setClient(new MockClient(), 'Client 1');
+
+        $url = 'http://www.example.com';
+        $this->crawler->addToPending($url);
+
+        // Set Mock Parser Interface to return URL's
+        $parser = $this->getMock('W4Y\Crawler\Parser\ParserInterface');
+        $parser->expects($this->any())
+            ->method('getUrls')
+            ->will($this->returnValue($this->getUrlSetOne()));
+
+        $parser->expects($this->any())
+            ->method('formatUrl')
+            ->will($this->returnCallback(function() {
+                $args = func_get_args();
+                return trim($args[0]);
+            }));
+
+        // Set parser that will return a fixed set of URL's.
+        $this->crawler->setParser($parser);
+
+        // Crawl
+        $this->crawler->setOption('recursiveCrawl', true);
+        $this->crawler->setOption('maxUrlFollows', 2);
+        $this->crawler->crawl();
+
+        $crawlerFound = $this->crawler->getList(Crawler::LIST_TYPE_CRAWLER_FOUND);
+        // First crawl should have found 5 url's
+        $this->assertCount(5, current($crawlerFound));
+
+        // Pending should be 1 because we found 5 but after filter left with 2 and 1 of the 2 was crawled.
+        $pending = $this->crawler->getList(Crawler::LIST_TYPE_PENDING);
+        $this->assertCount(1, $pending);
     }
 
     private function getUrlSetOne()

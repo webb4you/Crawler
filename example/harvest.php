@@ -13,13 +13,13 @@ $client2 = new Client();
 // Initialize Crawler
 $crawler = new Crawler(array(
     'recursiveCrawl' => true, // Should the crawler follow other URL's on the page.
-    'maxUrlFollows' => 25, // Maximum amount of URL's to follow.
+    'maxUrlFollows' => 5, // Maximum amount of URL's to follow.
     'externalFollows' => false // Follow URL's that lead to an external resource.
 ));
 
-
-$crawler->setClient($client2, 'Client 2');
 $crawler->setClient($client1, 'Client 1');
+//$crawler->setClient($client2, 'Client 2');
+
 
 // Add URL's to crawl
 //$crawler->addToPending('http://en.wikipedia.org/wiki/Web_crawler');
@@ -56,7 +56,7 @@ $filter = new Filter('MyHarvestFilter', array(
 
 // Set crawler plugin / harvester
 // Other plugins can also be assigned to.
- $crawler->setPlugin($harvester);
+// $crawler->setPlugin($harvester);
 
 // Start crawling
 $crawler->crawl();
@@ -67,5 +67,7 @@ $stats = $crawler->getClientStats();
 echo $harvester->getNewLine() . 'CRAWLED LAST::<pre>' . print_r($crawler->getLastRequestData(), 1);
 
 echo '<pre>' . print_r($stats, 1);
+
+echo '<pre>' . print_r($crawler->storage, 1);
 
 echo '<pre>' . print_r($crawler->getCrawledUrls(), 1);

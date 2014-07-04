@@ -26,14 +26,8 @@ class Crawler
     private $options = array();
     private $originalHost;
 
-    private $pendingUrls = array();
-    private $crawledUrls = array();
-    private $failedUrls = array();
-    private $excludedUrls = array();
-    private $externalFollows = array();
-    private $externalUrls = array();
-    private $crawlerFoundUrls = array();
-    private $crawlerFound = array();
+    /** @var array $storage */
+    public $storage = array();
 
     private $activeClientQueue = 1;
     private $clientStats = array();
@@ -95,16 +89,48 @@ class Crawler
      */
     public function addToList($listType, $value, $key = null)
     {
-        if (!property_exists($this, $listType)) {
-            throw new \Exception(sprintf('Unrecognized URL Type %s.', $listType));
-        }
+        $currentStorageData = $this->getStorage($listType);
 
         if (!empty($key)) {
-            $this->$listType = array_merge($this->$listType, array($key => $value));
+            $data = array_merge($currentStorageData, array($key => $value));
+            $this->setStorage($listType, $data);
         } else {
             $value = $this->formatUrl($value);
-            $this->$listType = array_merge($this->$listType, array($this->hashString($value) => $value));
+            $data = array_merge($currentStorageData, array($this->hashString($value) => $value));
+            $this->addToStorage($listType, $data);
         }
+    }
+
+    private function addToStorage($listType, $data)
+    {
+        if (!isset($this->storage[$listType])) {
+            $this->storage[$listType] = array();
+        }
+
+        $this->storage[$listType] = array_merge($this->storage[$listType], $data);
+    }
+
+    private function getStorage($listType)
+    {
+        if (!isset($this->storage[$listType])) {
+            $this->storage[$listType] = array();
+        }
+
+        return $this->storage[$listType];
+    }
+
+    private function setStorage($listType, $data)
+    {
+        if (!isset($this->storage[$listType])) {
+            $this->storage[$listType] = array();
+        }
+
+        $this->storage[$listType] = $data;
+    }
+
+    private function resetStorage()
+    {
+        $this->storage = array();
     }
 
     /**
@@ -130,11 +156,9 @@ class Crawler
      */
     public function getList($listType)
     {
-        if (!property_exists($this, $listType)) {
-            throw new \Exception(sprintf('Unrecognized List Type %s.', $listType));
-        }
+        $data = $this->getStorage($listType);
 
-        return $this->$listType;
+        return $data;
     }
 
     /**
@@ -205,7 +229,7 @@ class Crawler
      */
     public function getCrawledUrls()
     {
-        return $this->crawledUrls;
+        return $this->getList(self::LIST_TYPE_CRAWLED);
     }
 
     /**
@@ -215,7 +239,7 @@ class Crawler
      */
     public function getFoundUrls()
     {
-        return $this->crawlerFoundUrls;
+        return $this->getList(self::LIST_TYPE_CRAWLER_FOUND);
     }
 
     /**
@@ -225,28 +249,19 @@ class Crawler
      */
     public function getPending()
     {
-        return $this->pendingUrls;
+        return $this->getList(self::LIST_TYPE_PENDING);
     }
 
     public function getPendingUrl()
     {
-        $pendingUrls = $this->getList(self::LIST_TYPE_PENDING);
+        $pendingUrls = $this->getPending();
         $url = array_shift($pendingUrls);
 
         // Populate list.
-        $this->pendingUrls = $pendingUrls;
+        $this->setStorage(self::LIST_TYPE_PENDING, $pendingUrls);
+//        $this->pendingUrls = $pendingUrls;
 
         return $this->formatUrl($url);
-    }
-
-    /**
-     * Get URL's that were pending to be crawled but were not.
-     *
-     * @return array
-     */
-    public function getPendingBacklog()
-    {
-        return $this->pendingBacklog;
     }
 
     /**
@@ -375,6 +390,8 @@ class Crawler
         $this->externalUrls = array();
         $this->crawlerFoundUrls = array();
         $this->crawlerFound = array();
+
+        $this->resetStorage();
     }
 
     /**
@@ -780,9 +797,9 @@ class Crawler
 
             // Filter URL's based on request filter
             $requestUrlFilter = $this->getRequestFilter();
-            $links = $this->filterUrlList($requestUrlFilter, $links);
+            $filteredLinks = $this->filterUrlList($requestUrlFilter, $links);
             $foundUrls = $this->getList(self::LIST_TYPE_CRAWLER_FOUND_RAW);
-            foreach ($links as $l) {
+            foreach ($filteredLinks as $l) {
                 // Do not add URL's already crawled
                 if (array_key_exists($this->hashString($l->url), $foundUrls)) {
                     continue;
