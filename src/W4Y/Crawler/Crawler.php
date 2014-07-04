@@ -25,14 +25,11 @@ class Crawler
 
     private $options = array();
     private $originalHost;
+    private $crawledIndex = 0;
+    private $crawlerRunning = false;
 
     /** @var array $storage */
     public $storage = array();
-
-    private $activeClientQueue = 1;
-    private $clientStats = array();
-    private $crawledIndex = 0;
-    private $crawlerRunning = false;
 
     /** @var ParserInterface $parser */
     private $parser;
@@ -45,24 +42,26 @@ class Crawler
 
     /** @var ClientInterface[] $clients */
     private $clients = array();
+    private $clientStats = array();
+    private $activeClientQueue = 1;
 
-    const STATS_SUCCESS = 'success';
-    const STATS_FAIL = 'fails';
-    const STATS_ERROR = 'errors';
-    const STATS_CRAWL = 'crawls';
-    const STATS_ATTEMPT = 'attempts';
-    const STATS_ID = 'id';
-    const STATS_SEQUENCE = 'sequence';
+    const STATS_SUCCESS                 = 'success';
+    const STATS_FAIL                    = 'fails';
+    const STATS_ERROR                   = 'errors';
+    const STATS_CRAWL                   = 'crawls';
+    const STATS_ATTEMPT                 = 'attempts';
+    const STATS_ID                      = 'id';
+    const STATS_SEQUENCE                = 'sequence';
 
-    const LIST_TYPE_PENDING = 'pendingUrls';
-    const LIST_TYPE_PENDING_BACKLOG = 'pendingBacklogUrls';
-    const LIST_TYPE_EXCLUDED = 'excludedUrls';
-    const LIST_TYPE_FAILED = 'failedUrls';
-    const LIST_TYPE_CRAWLED = 'crawledUrls';
-    const LIST_TYPE_CRAWLER_FOUND = 'crawlerFoundUrls';
-    const LIST_TYPE_CRAWLER_FOUND_RAW = 'crawlerFound';
-    const LIST_TYPE_CRAWLED_EXTERNAL = 'externalFollows';
-    const LIST_TYPE_EXTERNAL_URL = 'externalUrls';
+    const LIST_TYPE_PENDING             = 'pendingUrls';
+    const LIST_TYPE_PENDING_BACKLOG     = 'pendingBacklogUrls';
+    const LIST_TYPE_EXCLUDED            = 'excludedUrls';
+    const LIST_TYPE_FAILED              = 'failedUrls';
+    const LIST_TYPE_CRAWLED             = 'crawledUrls';
+    const LIST_TYPE_CRAWLER_FOUND       = 'crawlerFoundUrls';
+    const LIST_TYPE_CRAWLER_FOUND_RAW   = 'crawlerFound';
+    const LIST_TYPE_CRAWLED_EXTERNAL    = 'externalFollows';
+    const LIST_TYPE_EXTERNAL_URL        = 'externalUrls';
 
     public function __construct(array $options = array(), ClientInterface $client = null, ParserInterface $parser = null)
     {
