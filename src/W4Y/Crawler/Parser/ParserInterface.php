@@ -7,9 +7,6 @@ namespace W4Y\Crawler\Parser;
  */
 interface ParserInterface
 {
-    public function setDomain($domain);
-    public function getDomain();
-
     /**
      * Return array of objects.
      * Object must contain a url property.
@@ -18,5 +15,33 @@ interface ParserInterface
      * @return mixed
      */
     public function getUrls($html);
-    //public function formatUrl($url);
+
+    /**
+     * Format a URL to a consisten one.
+     *
+     * Format url is expected to change relative urls to absolute ones.
+     * Possibly remove hash tags and query strings etc.
+     *
+     * @param $url
+     * @return string
+     */
+    public function formatUrl($url);
+
+    /**
+     * Set the domain of the URL.
+     *
+     * Domain will be needed for pages with relative links.
+     * Always best to crawl with absolute urls
+     *
+     * @param $domain
+     * @return void
+     */
+    public function setDomain($domain);
+
+    /**
+     * Return the set domain
+     *
+     * @return string|null
+     */
+    public function getDomain();
 }

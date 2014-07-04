@@ -373,6 +373,7 @@ class Crawler
         $this->externalFollows = array();
         $this->externalUrls = array();
         $this->crawlerFoundUrls = array();
+        $this->crawlerFound = array();
     }
 
     /**
@@ -514,21 +515,7 @@ class Crawler
      */
     private function formatUrl($url)
     {
-        $postSlash 	= '';
-
-        // Remove the port from the url
-        $url = preg_replace('#\:[0-9]{2,4}#', '', $url);
-
-        // Check for a file extension in URL or query string.
-        if (preg_match('#\/?.*\.[a-zA-Z]{2,4}(?!\/)$|\?.*#', $url)) {
-
-            // Remove the slash if the url ends with one.
-            $url = rtrim($url, '/');
-
-        }
-
-        return $url .= $postSlash;
-        //return $this->parser->formatUrl($url);
+        return $this->parser->formatUrl($url);
     }
 
     /**

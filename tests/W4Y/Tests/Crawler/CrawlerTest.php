@@ -312,6 +312,13 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
             ->method('getUrls')
             ->will($this->returnValue($this->getUrlSetOne()));
 
+        $parser->expects($this->any())
+            ->method('formatUrl')
+            ->will($this->returnCallback(function() {
+                $args = func_get_args();
+                return trim($args[0]);
+            }));
+
         // Set parser that will return a fixed set of URL's.
         $this->crawler->setParser($parser);
 
@@ -396,9 +403,6 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $url = 'http://www.example.com';
         $this->crawler->addToPending($url);
 
-        $url = 'http://www.example.com/page1.html';
-        $this->crawler->addToPending($url);
-
         $this->crawler->setOption('sleepInterval', 1);
 
         // Crawl
@@ -406,7 +410,7 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $this->crawler->crawl();
         $total = (microtime(true) - $start);
 
-        $this->assertGreaterThan(2, $total);
+        $this->assertGreaterThan(1, $total);
     }
 
     public function testRequestFilter()
@@ -431,9 +435,12 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
             ->method('getUrls')
             ->will($this->returnValue($this->getUrlSetOne()));
 
-//        $parser->expects($this->any())
-//            ->method('formatUrl')
-//            ->will($this->returnValue($this->getUrlSetOne()));
+        $parser->expects($this->any())
+            ->method('formatUrl')
+            ->will($this->returnCallback(function() {
+                $args = func_get_args();
+                return trim($args[0]);
+            }));
 
         // Set parser that will return a fixed set of URL's.
         $this->crawler->setParser($parser);
@@ -448,6 +455,8 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
 
         // Second URL crawled should be contact.html
         $url = current(array_slice($crawledUrls, 1, 1));
+
+
         $this->assertEquals('http://www.example.com/contact.html', $url['url']);
 
         // Should have only crawled 2 urls.
@@ -470,6 +479,13 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $parser->expects($this->any())
             ->method('getUrls')
             ->will($this->returnValue($this->getUrlSetOne()));
+
+        $parser->expects($this->any())
+            ->method('formatUrl')
+            ->will($this->returnCallback(function() {
+                $args = func_get_args();
+                return trim($args[0]);
+            }));
 
         // Set parser that will return a fixed set of URL's.
         $this->crawler->setParser($parser);
