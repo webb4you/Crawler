@@ -7,7 +7,7 @@ use W4Y\Tests\Crawler\Client\MockClient;
 
 class CrawlerTest extends \PHPUnit_Framework_TestCase
 {
-    /** @var Crawler filter */
+    /** @var Crawler $crawler */
     private $crawler;
 
     public function setUp()

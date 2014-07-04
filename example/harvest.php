@@ -3,7 +3,6 @@ set_time_limit(0);
 require dirname(__DIR__) . '/vendor/autoload.php';
 require __DIR__ . '/HarvestPlugin.php';
 
-use Zend\Http\Client\Adapter\Proxy;
 use W4Y\Crawler\Client\Client;
 use W4Y\Crawler\Crawler;
 use W4Y\Crawler\Filter;

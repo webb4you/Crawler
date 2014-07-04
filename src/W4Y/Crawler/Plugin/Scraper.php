@@ -1,7 +1,7 @@
 <?php
 namespace W4Y\Crawler\Plugin;
 
-use W4Y\Crawler\AbstractHarvester;
+use W4Y\Crawler\Harvester;
 use W4Y\Crawler\Crawler;
 use W4Y\Crawler\Filter;
 
@@ -9,9 +9,8 @@ use W4Y\Crawler\Filter;
  * Harvester data and implement plugin interface so that hooks can
  * be implemented during the crawling process.
  *
- * @author Ilan Rivers <ilan@webb4you.com>
  */
-class Harvester extends AbstractHarvester implements PluginInterface
+class Scraper extends Harvester implements PluginInterface
 {
     /** @var array */
     private $filters = array();
@@ -102,9 +101,9 @@ class Harvester extends AbstractHarvester implements PluginInterface
         if ($this->canBeHarvested($url)) {
 
             $this->harvest(
-                md5($url),
-                $crawler->getClient()->getBody(),
-                $crawler->getLastRequestData()
+                $crawler->hashString($url), // Key
+                $crawler->getClient()->getBody(), // Html
+                $crawler->getLastRequestData() // Custom Data
             );
 
         }

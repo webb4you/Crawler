@@ -401,7 +401,7 @@ class Crawler
      *
      * @return array
      */
-    private function getActiveClientDetails()
+    private function getClientDetails()
     {
         $clients = $this->getClients();
         $client = array_slice($clients, ($this->activeClientQueue - 1), 1);
@@ -409,9 +409,9 @@ class Crawler
         return $client;
     }
 
-    public function getActiveClientName()
+    public function getClientName()
     {
-        $client = $this->getActiveClientDetails();
+        $client = $this->getClientDetails();
         $name = current(array_keys($client));
 
         return $name;
@@ -419,7 +419,7 @@ class Crawler
 
     private function setClientStats($statsType)
     {
-        $clientName = $this->getActiveClientName();
+        $clientName = $this->getClientName();
         $clientActive = $this->activeClientQueue;
 
         // Initialize all stats.
@@ -448,7 +448,7 @@ class Crawler
         return array_shift($crawled);
     }
 
-    private function hashString($string)
+    public function hashString($string)
     {
         return md5($string);
     }
@@ -584,7 +584,7 @@ class Crawler
             $this->activeClientQueue++;
         }
 
-        $client = $this->getActiveClientDetails();
+        $client = $this->getClientDetails();
         $this->client = current($client);
     }
 

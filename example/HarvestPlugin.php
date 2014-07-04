@@ -14,7 +14,7 @@ use W4Y\Dom\Element;
  * set. Harvested data can be processed with a callback.
  *
  */
-class HarvestPlugin extends W4Y\Crawler\Plugin\Harvester
+class HarvestPlugin extends W4Y\Crawler\Plugin\Scraper
 {
     static private $dataCnt = 0;
 
@@ -28,7 +28,7 @@ class HarvestPlugin extends W4Y\Crawler\Plugin\Harvester
     public function preRequest(Crawler $crawler)
     {
         $client = $crawler->getClient();
-        echo 'Crawling From : ' . get_class($client) . ' - ' . $crawler->getActiveClientName() . PHP_EOL;
+        echo 'Crawling From : ' . get_class($client) . ' - ' . $crawler->getClientName() . PHP_EOL;
         echo self::getNewLine();
     }
 

@@ -3,7 +3,7 @@ namespace W4Y\Crawler;
 
 use W4Y\Dom\Selector;
 
-abstract class AbstractHarvester
+class Harvester
 {
     private $harvestedData = null;
 
@@ -197,5 +197,37 @@ abstract class AbstractHarvester
             $data = $this->organizeHarvestRules($data);
             $this->harvestedData[$key] = $data;
         }
+    }
+
+    public function filterData($data)
+    {
+        if (isset($data[0])) {
+            $data = current($data);
+        }
+
+        $filteredData = array();
+
+        foreach ($data as $dKey => $dVal) {
+
+            if (is_array($dVal)) {
+
+                foreach ($dVal as $dKey2 => $dVal2) {
+
+                    if (is_array($dVal2)) {
+
+                        if (!empty($dVal2['text'])) {
+                            $filteredData[$dKey][] = trim($dVal2['text']);
+                        }
+
+                    } else {
+                        $filteredData[$dKey][$dKey2] = trim($dVal2);
+                    }
+                }
+            } else {
+                $filteredData[$dKey] = trim($dVal);
+            }
+        }
+
+        return $filteredData;
     }
 }
