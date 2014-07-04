@@ -53,15 +53,15 @@ class Crawler
     const STATS_ID                      = 'id';
     const STATS_SEQUENCE                = 'sequence';
 
-    const LIST_TYPE_PENDING             = 'pendingUrls';
-    const LIST_TYPE_PENDING_BACKLOG     = 'pendingBacklogUrls';
-    const LIST_TYPE_EXCLUDED            = 'excludedUrls';
-    const LIST_TYPE_FAILED              = 'failedUrls';
-    const LIST_TYPE_CRAWLED             = 'crawledUrls';
-    const LIST_TYPE_CRAWLER_FOUND       = 'crawlerFoundUrls';
-    const LIST_TYPE_CRAWLER_FOUND_RAW   = 'crawlerFound';
-    const LIST_TYPE_CRAWLED_EXTERNAL    = 'externalFollows';
-    const LIST_TYPE_EXTERNAL_URL        = 'externalUrls';
+    const DATA_TYPE_PENDING             = 'pendingUrls';
+    const DATA_TYPE_PENDING_BACKLOG     = 'pendingBacklogUrls';
+    const DATA_TYPE_EXCLUDED            = 'excludedUrls';
+    const DATA_TYPE_FAILED              = 'failedUrls';
+    const DATA_TYPE_CRAWLED             = 'crawledUrls';
+    const DATA_TYPE_CRAWLER_FOUND       = 'crawlerFoundUrls';
+    const DATA_TYPE_CRAWLER_FOUND_RAW   = 'crawlerFound';
+    const DATA_TYPE_CRAWLED_EXTERNAL    = 'externalFollows';
+    const DATA_TYPE_EXTERNAL_URL        = 'externalUrls';
 
     public function __construct(array $options = array(), ClientInterface $client = null, ParserInterface $parser = null)
     {
@@ -100,6 +100,10 @@ class Crawler
         }
     }
 
+    /**
+     * @param $listType
+     * @param $data
+     */
     private function addToStorage($listType, $data)
     {
         if (!isset($this->storage[$listType])) {
@@ -138,7 +142,7 @@ class Crawler
      */
     public function addToPending($url)
     {
-        $this->addToList(self::LIST_TYPE_PENDING, $url);
+        $this->addToList(self::DATA_TYPE_PENDING, $url);
 
         return $this;
     }
@@ -166,7 +170,7 @@ class Crawler
      */
     public function addToPendingBacklog($url)
     {
-        $this->addToList(self::LIST_TYPE_PENDING_BACKLOG, $url);
+        $this->addToList(self::DATA_TYPE_PENDING_BACKLOG, $url);
 
         return $this;
     }
@@ -177,7 +181,7 @@ class Crawler
      */
     public function addToFailed($url)
     {
-        $this->addToList(self::LIST_TYPE_FAILED, $url);
+        $this->addToList(self::DATA_TYPE_FAILED, $url);
 
         return $this;
     }
@@ -190,14 +194,14 @@ class Crawler
     public function addToFoundUrls($url, $links)
     {
         $url = $this->formatUrl($url);
-        $this->addToList(self::LIST_TYPE_CRAWLER_FOUND, $links, $key = $this->hashString($url));
+        $this->addToList(self::DATA_TYPE_CRAWLER_FOUND, $links, $key = $this->hashString($url));
 
         return $this;
     }
 
     private function addToExternalUrls($url)
     {
-        $this->addToList(self::LIST_TYPE_EXTERNAL_URL, $url);
+        $this->addToList(self::DATA_TYPE_EXTERNAL_URL, $url);
 
         return $this;
     }
@@ -216,7 +220,7 @@ class Crawler
         $this->crawledIndex++;
         $dt['sequence'] = $this->crawledIndex;
 
-        $this->addToList(self::LIST_TYPE_CRAWLED, $dt, $key = $dt['id']);
+        $this->addToList(self::DATA_TYPE_CRAWLED, $dt, $key = $dt['id']);
 
         return $this;
     }
@@ -228,7 +232,7 @@ class Crawler
      */
     public function getCrawledUrls()
     {
-        return $this->getList(self::LIST_TYPE_CRAWLED);
+        return $this->getList(self::DATA_TYPE_CRAWLED);
     }
 
     /**
@@ -238,7 +242,7 @@ class Crawler
      */
     public function getFoundUrls()
     {
-        return $this->getList(self::LIST_TYPE_CRAWLER_FOUND);
+        return $this->getList(self::DATA_TYPE_CRAWLER_FOUND);
     }
 
     /**
@@ -248,7 +252,7 @@ class Crawler
      */
     public function getPending()
     {
-        return $this->getList(self::LIST_TYPE_PENDING);
+        return $this->getList(self::DATA_TYPE_PENDING);
     }
 
     public function getPendingUrl()
@@ -257,7 +261,7 @@ class Crawler
         $url = array_shift($pendingUrls);
 
         // Populate list.
-        $this->setStorage(self::LIST_TYPE_PENDING, $pendingUrls);
+        $this->setStorage(self::DATA_TYPE_PENDING, $pendingUrls);
 //        $this->pendingUrls = $pendingUrls;
 
         return $this->formatUrl($url);
@@ -586,13 +590,13 @@ class Crawler
     private function canBeCrawled($url)
     {
         // Check if URL has been already crawled.
-        $crawledUrls = $this->getList(self::LIST_TYPE_CRAWLED);
+        $crawledUrls = $this->getList(self::DATA_TYPE_CRAWLED);
         if (array_key_exists($this->hashString($url), $crawledUrls)) {
             return false;
         }
 
         // Check if url has been excluded
-        $excludedUrls = $this->getList(self::LIST_TYPE_EXCLUDED);
+        $excludedUrls = $this->getList(self::DATA_TYPE_EXCLUDED);
         if (array_key_exists($this->hashString($url), $excludedUrls)) {
             return false;
         }
@@ -797,13 +801,13 @@ class Crawler
             // Filter URL's based on request filter
             $requestUrlFilter = $this->getRequestFilter();
             $filteredLinks = $this->filterUrlList($requestUrlFilter, $links);
-            $foundUrls = $this->getList(self::LIST_TYPE_CRAWLER_FOUND_RAW);
+            $foundUrls = $this->getList(self::DATA_TYPE_CRAWLER_FOUND_RAW);
             foreach ($filteredLinks as $l) {
                 // Do not add URL's already crawled
                 if (array_key_exists($this->hashString($l->url), $foundUrls)) {
                     continue;
                 }
-                $this->addToList(self::LIST_TYPE_CRAWLER_FOUND_RAW, $l->url);
+                $this->addToList(self::DATA_TYPE_CRAWLER_FOUND_RAW, $l->url);
                 $this->addToPending($l->url);
             }
         }

@@ -548,12 +548,12 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $this->crawler->setOption('maxUrlFollows', 2);
         $this->crawler->crawl();
 
-        $crawlerFound = $this->crawler->getList(Crawler::LIST_TYPE_CRAWLER_FOUND);
+        $crawlerFound = $this->crawler->getList(Crawler::DATA_TYPE_CRAWLER_FOUND);
         // First crawl should have found 5 url's
         $this->assertCount(5, current($crawlerFound));
 
         // Pending should be 1 because we found 5 but after filter left with 2 and 1 of the 2 was crawled.
-        $pending = $this->crawler->getList(Crawler::LIST_TYPE_PENDING);
+        $pending = $this->crawler->getList(Crawler::DATA_TYPE_PENDING);
         $this->assertCount(1, $pending);
     }
 
