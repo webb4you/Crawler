@@ -354,12 +354,52 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
 
     public function testOptionExternalFollows()
     {
+        // Set crawler clients
+        $this->crawler->setClient(new MockClient(), 'Client 1');
 
+        $url = 'http://www.example.com';
+        $this->crawler->addToPending($url);
+
+        $url = 'http://www.example.com/page1.html';
+        $this->crawler->addToPending($url);
+
+        $url = 'http://www.example2.com/';
+        $this->crawler->addToPending($url);
+
+        $url = 'http://www.example2.com/page1.html';
+        $this->crawler->addToPending($url);
+
+        $this->crawler->setOption('externalFollows', true);
+
+        // Crawl
+        $this->crawler->crawl();
+        $stats = $this->crawler->getClientStats();
+        $crawlCnt = $stats[1][Crawler::STATS_CRAWL];
+        $this->assertEquals(4, $crawlCnt);
+
+        $crawled = $this->crawler->getCrawledUrls();
+        $this->assertCount(4, $crawled);
     }
 
     public function testOptionSleepInterval()
     {
+        // Set crawler clients
+        $this->crawler->setClient(new MockClient(), 'Client 1');
 
+        $url = 'http://www.example.com';
+        $this->crawler->addToPending($url);
+
+        $url = 'http://www.example.com/page1.html';
+        $this->crawler->addToPending($url);
+
+        $this->crawler->setOption('sleepInterval', 1);
+
+        // Crawl
+        $start = microtime(true);
+        $this->crawler->crawl();
+        $total = (microtime(true) - $start);
+
+        $this->assertGreaterThan(2, $total);
     }
 
     private function getUrlSetOne()
