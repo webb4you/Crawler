@@ -28,7 +28,7 @@ class HarvestPlugin extends W4Y\Crawler\Plugin\Harvester
     public function preRequest(Crawler $crawler)
     {
         $client = $crawler->getClient();
-        echo 'Crawling From : ' . get_class($client) . ' - ' . $client->getName() . PHP_EOL;
+        echo 'Crawling From : ' . get_class($client) . ' - ' . $crawler->getActiveClientName() . PHP_EOL;
         echo self::getNewLine();
     }
 

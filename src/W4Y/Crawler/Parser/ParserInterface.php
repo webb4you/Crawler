@@ -18,4 +18,5 @@ interface ParserInterface
      * @return mixed
      */
     public function getUrls($html);
+    //public function formatUrl($url);
 }

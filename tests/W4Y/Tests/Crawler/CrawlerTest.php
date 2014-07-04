@@ -2,6 +2,7 @@
 namespace W4Y\Tests\Crawler;
 
 use W4Y\Crawler\Crawler;
+use W4Y\Crawler\Filter;
 use W4Y\Tests\Crawler\Client\MockClient;
 
 class CrawlerTest extends \PHPUnit_Framework_TestCase
@@ -139,8 +140,8 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(3, $client2Cnt);
 
         // Client 3 should have crawled 2 URL's.
-        $client2Cnt = $clientStats[3][Crawler::STATS_CRAWL];
-        $this->assertEquals(2, $client2Cnt);
+        $client3Cnt = $clientStats[3][Crawler::STATS_CRAWL];
+        $this->assertEquals(2, $client3Cnt);
     }
 
     public function testCanCrawlAndSaveClientStats()
@@ -307,7 +308,7 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
 
         // Set Mock Parser Interface to return URL's
         $parser = $this->getMock('W4Y\Crawler\Parser\ParserInterface');
-        $parser->expects($this->once())
+        $parser->expects($this->exactly(4))
             ->method('getUrls')
             ->will($this->returnValue($this->getUrlSetOne()));
 
@@ -315,7 +316,7 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $this->crawler->setParser($parser);
 
         // Only crawl 1 page
-        $this->crawler->setOption('maxUrlFollows', 1);
+        $this->crawler->setOption('maxUrlFollows', 4);
 
         // Set recursive crawl so that found URL's are added to pending queue
         $this->crawler->setOption('recursiveCrawl', true);
@@ -323,9 +324,11 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         // Crawl
         $this->crawler->crawl();
 
-        // Parser returned 3 URL's so queue should now have 3.
+        // Parser returned 5 url's for each page request that are the same. URL's should not be
+        // added to the queue if they were already found. So 5 url's + the original = 6 - the external domain is 5.
+        // We should have pending 5 - maxUrlFollows = 1
         $pendingUrls = $this->crawler->getPending();
-        $this->assertCount(3, $pendingUrls);
+        $this->assertCount(1, $pendingUrls);
     }
 
     public function testOptionMaxUrlFollows()
@@ -350,6 +353,10 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         // Max set at 2 so we have 1 pending url
         $pendingUrls = $this->crawler->getPending();
         $this->assertCount(1, $pendingUrls);
+
+        // Max set at 2 so we crawled 2 url's
+        $crawledUrls = $this->crawler->getCrawledUrls();
+        $this->assertCount(2, $crawledUrls);
     }
 
     public function testOptionExternalFollows()
@@ -402,16 +409,107 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $this->assertGreaterThan(2, $total);
     }
 
+    public function testRequestFilter()
+    {
+        $filter = new Filter('TestFilter', array(
+            array('match' => '#contact#', 'type' => Filter::MUST_MATCH),
+            array('match' => 'help', 'type' => Filter::MUST_NOT_CONTAIN)
+        ));
+
+        // Set filter
+        $this->crawler->setRequestFilter($filter);
+
+        // Set crawler clients
+        $this->crawler->setClient(new MockClient(), 'Client 1');
+
+        $url = 'http://www.example.com';
+        $this->crawler->addToPending($url);
+
+        // Set Mock Parser Interface to return URL's
+        $parser = $this->getMock('W4Y\Crawler\Parser\ParserInterface');
+        $parser->expects($this->any())
+            ->method('getUrls')
+            ->will($this->returnValue($this->getUrlSetOne()));
+
+//        $parser->expects($this->any())
+//            ->method('formatUrl')
+//            ->will($this->returnValue($this->getUrlSetOne()));
+
+        // Set parser that will return a fixed set of URL's.
+        $this->crawler->setParser($parser);
+
+        // Set recursive crawl so that found URL's are added to pending queue
+        $this->crawler->setOption('recursiveCrawl', true);
+
+        // Crawl
+        $this->crawler->crawl();
+
+        $crawledUrls = $this->crawler->getCrawledUrls();
+
+        // Second URL crawled should be contact.html
+        $url = current(array_slice($crawledUrls, 1, 1));
+        $this->assertEquals('http://www.example.com/contact.html', $url['url']);
+
+        // Should have only crawled 2 urls.
+        $this->assertCount(2, $crawledUrls);
+
+        // ---------------------------------
+        // Reset all data
+        $this->crawler->reset();
+
+        $filter = new Filter('TestFilter', array(
+            array('match' => 'crawl', 'type' => Filter::MUST_CONTAIN),
+            array('match' => '#page#', 'type' => Filter::MUST_NOT_MATCH)
+        ));
+
+        // Set filter
+        $this->crawler->setRequestFilter($filter);
+
+        // Set Mock Parser Interface to return URL's
+        $parser = $this->getMock('W4Y\Crawler\Parser\ParserInterface');
+        $parser->expects($this->any())
+            ->method('getUrls')
+            ->will($this->returnValue($this->getUrlSetOne()));
+
+        // Set parser that will return a fixed set of URL's.
+        $this->crawler->setParser($parser);
+
+        // Set crawler clients
+        $this->crawler->setClient(new MockClient(), 'Client 1');
+
+        $url = 'http://www.example.com';
+        $this->crawler->addToPending($url);
+
+        // Set recursive crawl so that found URL's are added to pending queue
+        $this->crawler->setOption('recursiveCrawl', true);
+
+        // Crawl
+        $this->crawler->crawl();
+
+        $crawledUrls = $this->crawler->getCrawledUrls();
+
+        // Second URL crawled should be aboutCrawling.html based on our filters
+        $url = current(array_slice($crawledUrls, 1, 1));
+        $this->assertEquals('http://www.example.com/aboutCrawling.html', $url['url']);
+
+        // Should have only crawled 2 urls.
+        $this->assertCount(2, $crawledUrls);
+    }
+
     private function getUrlSetOne()
     {
         $url1 = array('url' => 'http://www.example.com/pageCrawl.html');
-        $url2 = array('url' => 'http://www.example.com/pageCraw2.html');
-        $url3 = array('url' => 'http://www.example.com/pageCraw3.html');
+        $url2 = array('url' => 'http://www.example.com/aboutCrawling.html');
+        $url3 = array('url' => 'http://www.example2.com/contactExternalDomain.html');
+        $url4 = array('url' => 'http://www.example.com/contact-help.html');
+        $url5 = array('url' => 'http://www.example.com/contact.html');
 
         return array(
             (object) $url1,
             (object) $url2,
-            (object) $url3
+            (object) $url3,
+            (object) $url4,
+            (object) $url5
         );
     }
 

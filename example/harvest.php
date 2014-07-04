@@ -13,8 +13,8 @@ $client2 = new Client();
 
 // Initialize Crawler
 $crawler = new Crawler(array(
-    'recursiveCrawl' => false, // Should the crawler follow other URL's on the page.
-    'maxUrlFollows' => 10, // Maximum amount of URL's to follow.
+    'recursiveCrawl' => true, // Should the crawler follow other URL's on the page.
+    'maxUrlFollows' => 25, // Maximum amount of URL's to follow.
     'externalFollows' => false // Follow URL's that lead to an external resource.
 ));
 
@@ -23,12 +23,12 @@ $crawler->setClient($client2, 'Client 2');
 
 
 // Add URL's to crawl
-$crawler->addToPending('http://en.wikipedia.org/wiki/Web_crawler');
-$crawler->addToPending('http://en.wikipedia.org/wiki/DataparkSearch');
-$crawler->addToPending('http://en.wikipedia.org/wiki/DataparkSearching');
+//$crawler->addToPending('http://en.wikipedia.org/wiki/Web_crawler');
+//$crawler->addToPending('http://en.wikipedia.org/wiki/DataparkSearch');
+$crawler->addToPending('http://dev.webb4you.com/sandbox/');
 
 $filter = new Filter('MyRequestFilter', array(
-    array('match' => '#movies\/[0-9]+#', 'type' => Filter::MUST_MATCH)
+    array('match' => 'german', 'type' => Filter::MUST_CONTAIN)
 ));
 $crawler->setRequestFilter($filter);
 
@@ -36,10 +36,10 @@ $crawler->setRequestFilter($filter);
 $harvester = new HarvestPlugin();
 
 // Get the header title
-$harvester->setHarvestRule('title', 'h1');
+$harvester->setHarvestRule('Provinces', 'table.wikitable tr td:nth-last-of-type(2)');
 
 // I know there is a section with open source crawlers.
-$harvester->setHarvestRule('OpenSourceCrawler', 'h3:nth-last-of-type(1) + ul i a');
+//$harvester->setHarvestRule('OpenSourceCrawler', 'h3:nth-last-of-type(1) + ul i a');
 
 // How do we want to return this harvested data.
 $harvester->setRenderType(HarvestPlugin::HARVEST_AS_ARRAY);
@@ -48,7 +48,7 @@ $harvester->setRenderType(HarvestPlugin::HARVEST_AS_ARRAY);
 $filter = new Filter('MyHarvestFilter', array(
     array('match' => '#crawler#', 'type' => Filter::MUST_MATCH)
 ));
-$harvester->setFilter($filter);
+//$harvester->setFilter($filter);
 
 // Optionally save the harvested data directly to a file to reduce memory usage or
 // to process the data at a later time.
@@ -57,7 +57,7 @@ $harvester->setFilter($filter);
 
 // Set crawler plugin / harvester
 // Other plugins can also be assigned to.
-// $crawler->setPlugin($harvester);
+ $crawler->setPlugin($harvester);
 
 // Start crawling
 $crawler->crawl();

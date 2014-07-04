@@ -14,6 +14,25 @@ class Parser implements ParserInterface
         return $this->uri;
     }
 
+    public function setDomain($url)
+    {
+        $uri = new Uri($url);
+        $this->uri = $uri;
+
+        $d = $uri->getScheme() . '://' . $uri->getHost();
+        $this->domain = $d;
+    }
+
+    /**
+     * Get domain
+     *
+     * @return mixed
+     */
+    public function getDomain()
+    {
+        return $this->domain;
+    }
+
     /**
      * Get URL's in a html document
      *
@@ -158,22 +177,21 @@ class Parser implements ParserInterface
         return $url;
     }
 
-    public function setDomain($url)
+    public function formatUrl($url)
     {
-        $uri = new Uri($url);
-        $this->uri = $uri;
+        $postSlash 	= '';
 
-        $d = $uri->getScheme() . '://' . $uri->getHost();
-        $this->domain = $d;
-    }
+        // Remove the port from the url
+        $url = preg_replace('#\:[0-9]{2,4}#', '', $url);
 
-    /**
-     * Get domain
-     *
-     * @return mixed
-     */
-    public function getDomain()
-    {
-        return $this->domain;
+        // Check for a file extension in URL or query string.
+        if (preg_match('#\/?.*\.[a-zA-Z]{2,4}(?!\/)$|\?.*#', $url)) {
+
+            // Remove the slash if the url ends with one.
+            $url = rtrim($url, '/');
+
+        }
+
+        return $url .= $postSlash;
     }
 }

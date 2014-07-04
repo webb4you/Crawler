@@ -26,39 +26,32 @@ class Crawler
     private $options = array();
 
     private $pendingUrls = array();
-    private $pendingBacklogUrls = array();
     private $crawledUrls = array();
     private $failedUrls = array();
-    private $excludeUrls = array();
+    private $excludedUrls = array();
     private $externalFollows = array();
     private $externalUrls = array();
     private $crawlerFoundUrls = array();
+    private $crawlerFound = array();
 
     private $originalHost;
 
-    private $lastRequestData = array();
-
-    /** @var array Filter[] */
-    private $requestUrlFilter = array();
-
-    /** @var array PluginInterface[] */
+    private $activeClientQueue = 1;
+    private $clientStats = array();
+    private $crawledIndex = 0;
+    private $crawlerRunning;
+    /** @var ParserInterface $parser */
+    private $parser;
+    /** @var Filter[] $requestFilter */
+    private $requestFilter = array();
+    /** @var PluginInterface[] $plugins */
     private $plugins = array();
-
-    /** @var array ClientInterface[] */
+    /** @var ClientInterface[] $clients */
     private $clients = array();
-
     /** @var ClientInterface $client */
     private $client;
 
-    private $activeClientQueue;
 
-    private $clientStats = array();
-
-    private $crawledIndex = 0;
-
-    private $crawlerRunning;
-
-    private $parser;
 
     const STATS_SUCCESS = 'success';
     const STATS_FAIL = 'fails';
@@ -70,10 +63,11 @@ class Crawler
 
     const LIST_TYPE_PENDING = 'pendingUrls';
     const LIST_TYPE_PENDING_BACKLOG = 'pendingBacklogUrls';
-    const LIST_TYPE_EXCLUDED = 'excludeUrls';
+    const LIST_TYPE_EXCLUDED = 'excludedUrls';
     const LIST_TYPE_FAILED = 'failedUrls';
     const LIST_TYPE_CRAWLED = 'crawledUrls';
     const LIST_TYPE_CRAWLER_FOUND = 'crawlerFoundUrls';
+    const LIST_TYPE_CRAWLER_FOUND_RAW = 'crawlerFound';
     const LIST_TYPE_CRAWLED_EXTERNAL = 'externalFollows';
     const LIST_TYPE_EXTERNAL_URL = 'externalUrls';
 
@@ -83,12 +77,10 @@ class Crawler
         $this->options = array_merge($defaults, $options);
 
         // Set html parser
-        if (null !== $parser) {
-            $this->setParser($parser);
-        } else {
-            // Default parser
-            $this->setParser(new Parser());
+        if (null === $parser) {
+            $parser = new Parser();
         }
+        $this->setParser($parser);
 
         // Set client
         if (null !== $client) {
@@ -112,7 +104,7 @@ class Crawler
             $this->$listType = array_merge($this->$listType, array($key => $value));
         } else {
             $value = $this->formatUrl($value);
-            $this->$listType = array_merge($this->$listType, array(md5($value) => $value));
+            $this->$listType = array_merge($this->$listType, array($this->hashString($value) => $value));
         }
     }
 
@@ -176,7 +168,7 @@ class Crawler
     public function addToFoundUrls($url, $links)
     {
         $url = $this->formatUrl($url);
-        $this->addToList(self::LIST_TYPE_CRAWLER_FOUND, $links, $key = md5($url));
+        $this->addToList(self::LIST_TYPE_CRAWLER_FOUND, $links, $key = $this->hashString($url));
 
         return $this;
     }
@@ -266,7 +258,7 @@ class Crawler
      */
     public function setRequestFilter(Filter $filter)
     {
-        $this->requestUrlFilter[] = $filter;
+        $this->requestFilter[] = $filter;
 
         return $this;
     }
@@ -278,7 +270,7 @@ class Crawler
      */
     public function getRequestFilter()
     {
-        return $this->requestUrlFilter;
+        return $this->requestFilter;
     }
 
     /**
@@ -363,24 +355,24 @@ class Crawler
         return $this;
     }
 
-    /**
-     * Set last request data
-     *
-     * @param array $dt
-     */
-    private function setLastRequestData($dt)
+    public function clearRequestFilters()
     {
-        $this->lastRequestData = $dt;
+        $this->requestFilter = array();
     }
 
-    /**
-     * Return last request data
-     *
-     * @return array
-     */
-    public function getLastRequestData()
+    public function reset()
     {
-        return $this->lastRequestData;
+        $this->clearClients();
+        $this->clearPlugins();
+        $this->clearRequestFilters();
+
+        $this->crawledUrls = array();
+        $this->pendingUrls = array();
+        $this->excludedUrls = array();
+        $this->failedUrls = array();
+        $this->externalFollows = array();
+        $this->externalUrls = array();
+        $this->crawlerFoundUrls = array();
     }
 
     /**
@@ -388,9 +380,19 @@ class Crawler
      *
      * @param boolean $status
      */
-    public function setCrawlerRunning($status)
+    public function setCrawlerStatus($status)
     {
         $this->crawlerRunning = $status;
+    }
+
+    /**
+     * Get the state of the crawler
+     *
+     * @param boolean $status
+     */
+    public function getCrawlerStatus()
+    {
+        return $this->crawlerRunning;
     }
 
     /**
@@ -406,36 +408,12 @@ class Crawler
         return $client;
     }
 
-    private function getActiveClientName()
+    public function getActiveClientName()
     {
         $client = $this->getActiveClientDetails();
         $name = current(array_keys($client));
 
         return $name;
-    }
-
-    /**
-     * Determine the client to use.
-     *
-     * @throws \Exception
-     */
-    private function roundRobinClient()
-    {
-        $clients = $this->getClients();
-
-        if (empty($clients)) {
-            throw new \Exception('You have to set a client.');
-        }
-
-        $maxClients = count($clients);
-        if ((null === $this->activeClientQueue) || ($maxClients == $this->activeClientQueue) ) {
-            $this->activeClientQueue = 1;
-        } else {
-            $this->activeClientQueue++;
-        }
-
-        $client = $this->getActiveClientDetails();
-        $this->client = current($client);
     }
 
     private function setClientStats($statsType)
@@ -460,6 +438,167 @@ class Crawler
     public function getClientStats()
     {
         return $this->clientStats;
+    }
+
+    public function getLastRequestData()
+    {
+        $crawled = $this->getCrawledUrls();
+
+        return array_shift($crawled);
+    }
+
+    private function hashString($string)
+    {
+        return md5($string);
+    }
+
+    public function getOption($option)
+    {
+        if (!isset($this->options[$option])) {
+            throw new \Exception('The specified option does not exist.');
+        }
+
+        return $this->options[$option];
+    }
+
+    public function setOption($option, $value)
+    {
+        if (!isset($this->options[$option])) {
+            throw new \Exception('The specified option does not exist.');
+        }
+        $this->options[$option] = $value;
+
+        return $this;
+    }
+
+    private function getDefaultOptions()
+    {
+        return $this->defaultOptions;
+    }
+
+    public function getOptions()
+    {
+        return $this->options;
+    }
+
+    /**
+     * Check if a URL can be crawled based.
+     *
+     * @param string $url
+     * @return boolean
+     */
+    private function canBeCrawled($url)
+    {
+        // Check if URL has been already crawled.
+        $crawledUrls = $this->getList(self::LIST_TYPE_CRAWLED);
+        if (array_key_exists($this->hashString($url), $crawledUrls)) {
+            return false;
+        }
+
+        // Check if url has been excluded
+        $excludedUrls = $this->getList(self::LIST_TYPE_EXCLUDED);
+        if (array_key_exists($this->hashString($url), $excludedUrls)) {
+            return false;
+        }
+
+        return true;
+    }
+
+
+
+    /**
+     * Format all URL's so that we have consistent URL's
+     *
+     * @param string $url
+     * @return string
+     */
+    private function formatUrl($url)
+    {
+        $postSlash 	= '';
+
+        // Remove the port from the url
+        $url = preg_replace('#\:[0-9]{2,4}#', '', $url);
+
+        // Check for a file extension in URL or query string.
+        if (preg_match('#\/?.*\.[a-zA-Z]{2,4}(?!\/)$|\?.*#', $url)) {
+
+            // Remove the slash if the url ends with one.
+            $url = rtrim($url, '/');
+
+        }
+
+        return $url .= $postSlash;
+        //return $this->parser->formatUrl($url);
+    }
+
+    /**
+     * Check if string matches filter.
+     *
+     * @param array $filters
+     * @param string $url
+     * @return boolean
+     */
+    private function filterUrl(array $filters, $url)
+    {
+        // Filter strings
+        foreach ($filters as $filter) {
+            if (!$filter->isValid($url)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Removed URLs (strings) from array based on previously set filters.
+     *
+     * @param array $filters
+     * @param array $urls
+     * @return array
+     */
+    private function filterUrlList(array $filters, array $urls)
+    {
+        $toRemove = array();
+
+        foreach ($urls as $key => $u) {
+
+            if (!$this->filterUrl($filters, $u->url)) {
+                $toRemove[] = $key;
+            }
+        }
+
+        // Filter strings
+        foreach ($toRemove as $key) {
+            unset($urls[$key]);
+        }
+
+        return $urls;
+    }
+
+    /**
+     * Determine the client to use.
+     *
+     * @throws \Exception
+     */
+    private function roundRobinClient()
+    {
+        $clients = $this->getClients();
+
+        if (empty($clients)) {
+            throw new \Exception('You have to set a client.');
+        }
+
+        $maxClients = count($clients);
+        if ((0 === $this->crawledIndex) || ($maxClients == $this->activeClientQueue) ) {
+            $this->activeClientQueue = 1;
+        } else {
+            // Only while crawling is running will be round robin the queue
+            $this->activeClientQueue++;
+        }
+
+        $client = $this->getActiveClientDetails();
+        $this->client = current($client);
     }
 
     /**
@@ -493,24 +632,25 @@ class Crawler
         // Execute preCrawlLoop
         $this->executePlugin('preCrawl');
 
+        $maxUrlQue = $this->getOption('maxUrlQue');
         $maxConsecutiveFails = 500;
         $failedIterations = 0;
         $cntFollows = 0;
-        $this->crawlerRunning = true;
+        $this->setCrawlerStatus(true);
 
-        while (!empty($pendingUrls) && $this->crawlerRunning) {
+        while (!empty($pendingUrls) && $this->getCrawlerStatus()) {
 
             // Set the client
             $this->roundRobinClient();
 
             $failedIterations++;
-            if ($failedIterations > $maxConsecutiveFails) {
-                $this->crawlerRunning = false;
+            if (($failedIterations > $maxConsecutiveFails) || ($cntFollows > $maxUrlQue))  {
+                $this->setCrawlerStatus(false);
             }
 
             // Check for max follows
             if ($this->getOption('maxUrlFollows') <= $cntFollows) {
-                $this->crawlerRunning = false;
+                $this->setCrawlerStatus(false);
                 continue;
             }
 
@@ -521,7 +661,7 @@ class Crawler
             }
 
             // Check for external URL
-			if (!$this->getOption('externalFollows')) {
+            if (!$this->getOption('externalFollows')) {
                 if (strpos($followUrl, $this->originalHost) === false) {
                     $this->addToExternalUrls($followUrl);
                     continue;
@@ -568,7 +708,7 @@ class Crawler
                 $this->setClientStats(self::STATS_ERROR);
 
                 $dt = array(
-                    'id' => md5($followUrl),
+                    'id' => $this->hashString($followUrl),
                     'url' => $followUrl,
                     'status' => 'FAILED',
                     'error' => $e->getMessage()
@@ -583,7 +723,7 @@ class Crawler
             // Set crawl attempts
             $this->setClientStats(self::STATS_ATTEMPT);
 
-			// Increment follows
+            // Increment follows
             $cntFollows++;
 
             // Reset failed iterations
@@ -599,29 +739,6 @@ class Crawler
 
         // Execute postCrawlLoop
         $this->executePlugin('postCrawl');
-    }
-
-    /**
-     * Check if a URL can be crawled based.
-     *
-     * @param string $url
-     * @return boolean
-     */
-    private function canBeCrawled($url)
-    {
-        // Check if URL has been already crawled.
-        $crawledUrls = $this->getList(self::LIST_TYPE_CRAWLED);
-        if (array_key_exists(md5($url), $crawledUrls)) {
-            return false;
-        }
-
-        // Check if url has been excluded
-        $excludedUrls = $this->getList(self::LIST_TYPE_EXCLUDED);
-        if (array_key_exists(md5($url), $excludedUrls)) {
-            return false;
-        }
-
-        return true;
     }
 
     /**
@@ -642,12 +759,12 @@ class Crawler
 
         // Add to crawled url's
         $oUrl = array(
-            'id' => md5($currentUrl),
+            'id' => $this->hashString($currentUrl),
             'url' => $currentUrl,
             'finalUrl' => $finalUrl,
             'status' => $responseCode,
         );
-        $this->setLastRequestData($oUrl);
+        $this->addToCrawled($oUrl);
 
         // If original url was redirected, reset the original host variable.
         if (0 === $this->crawledIndex && $oUrl['url'] != $oUrl['finalUrl']) {
@@ -655,9 +772,6 @@ class Crawler
             $uri = new \Zend\Uri\Http($oUrl['finalUrl']);
             $this->originalHost = $uri->getHost();
         }
-
-        // Add to crawled
-        $this->addToCrawled($oUrl);
 
         // Set crawl amount
         $this->setClientStats(self::STATS_CRAWL);
@@ -673,138 +787,30 @@ class Crawler
         // Execute onSuccess
         $this->executePlugin('onSuccess');
 
-        // TODO Dont add urls that are already in the crawled URL array. array_intersect_key
-
+        // Fetch found url's
         $this->parser->setDomain($finalUrl);
         $links = $this->parser->getUrls($this->getClient()->getBody());
-
-        // Add to found list
-        $this->addToFoundUrls($currentUrl, $links);
-
 
         // If we are doing a recursive crawl then add all the found URL's to the queue.
         $isRecursiveCrawl = $this->getOption('recursiveCrawl');
         if (!empty($isRecursiveCrawl)) {
 
-            // Filter URL's
+            // Filter URL's based on request filter
             $requestUrlFilter = $this->getRequestFilter();
             $links = $this->filterUrlList($requestUrlFilter, $links);
-
+            $foundUrls = $this->getList(self::LIST_TYPE_CRAWLER_FOUND_RAW);
             foreach ($links as $l) {
-
-                // Add to pending queue only if limit was not reached else
-                // add url to backlog so we know what was not crawled.
-                // @todo why a max url que, should just keep track of how many urls were crawled.
-                $pendingUrls = $this->getPending();
-                $maxUrlQue = $this->getOption('maxUrlQue');
-                if (count($pendingUrls) < $maxUrlQue) {
-                    $this->addToPending($l->url);
-                } else {
-                    $this->addToPendingBacklog($l->url);
+                // Do not add URL's already crawled
+                if (array_key_exists($this->hashString($l->url), $foundUrls)) {
+                    continue;
                 }
-            }
-        }
-    }
-
-    public function getOption($option)
-    {
-        if (!isset($this->options[$option])) {
-            throw new \Exception('The specified option does not exist.');
-        }
-
-        return $this->options[$option];
-    }
-
-    public function setOption($option, $value)
-    {
-        if (!isset($this->options[$option])) {
-            throw new \Exception('The specified option does not exist.');
-        }
-        $this->options[$option] = $value;
-
-        return $this;
-    }
-
-    private function getDefaultOptions()
-    {
-        return $this->defaultOptions;
-    }
-
-    public function getOptions()
-    {
-        return $this->options;
-    }
-
-    /**
-     * Format all URL's so that we have consistent URL's
-     *
-     * @param string $url
-     * @return string
-     */
-    private function formatUrl($url)
-    {
-        $postSlash 	= '';
-
-        // Remove the port from the url
-        $url = preg_replace('#\:[0-9]{2,4}#', '', $url);
-
-        // Check for a file extension in URL or query string.
-        if (preg_match('#\/?.*\.[a-zA-Z]{2,4}(?!\/)$|\?.*#', $url)) {
-
-            // Remove the slash if the url ends with one.
-            $url = rtrim($url, '/');
-
-        }
-
-        return $url .= $postSlash;
-    }
-
-    /**
-     * Check if string matches filter.
-     *
-     * @param array $filters
-     * @param string $url
-     * @return boolean
-     */
-    private function filterUrl(array $filters, $url)
-    {
-        $isValid = true;
-
-        // Filter strings
-        foreach ($filters as $filter) {
-            if (!$filter->isValid($url)) {
-                $isValid = false;
-                break;
+                $this->addToList(self::LIST_TYPE_CRAWLER_FOUND_RAW, $l->url);
+                $this->addToPending($l->url);
             }
         }
 
-        return $isValid;
-    }
-
-    /**
-     * Removed URLs (strings) from array based on previously set filters.
-     *
-     * @param array $filters
-     * @param array $urls
-     * @return array
-     */
-    private function filterUrlList(array $filters, array $urls)
-    {
-        $toRemove = array();
-
-        foreach ($urls as $key => $u) {
-
-            if (!$this->filterUrl($filters, $u->url)) {
-                $toRemove[] = $key;
-            }
-        }
-
-        // Filter strings
-        foreach ($toRemove as $key) {
-            unset($urls[$key]);
-        }
-
-        return $urls;
+        // Add url's to found list
+        $this->addToFoundUrls($currentUrl, $links);
     }
 
     /**
@@ -825,4 +831,6 @@ class Crawler
             }
         }
     }
+
+
 }
