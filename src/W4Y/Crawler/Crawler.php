@@ -21,7 +21,6 @@ class Crawler
         'externalFollows' => false,
         'recursiveCrawl' => false,
         'sleepInterval' => 0,
-        'debug' => false
     );
 
     private $options = array();

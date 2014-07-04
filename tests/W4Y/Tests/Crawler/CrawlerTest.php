@@ -352,6 +352,16 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $this->assertCount(1, $pendingUrls);
     }
 
+    public function testOptionExternalFollows()
+    {
+
+    }
+
+    public function testOptionSleepInterval()
+    {
+
+    }
+
     private function getUrlSetOne()
     {
         $url1 = array('url' => 'http://www.example.com/pageCrawl.html');
