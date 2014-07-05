@@ -39,7 +39,6 @@ class HarvesterTest extends \PHPUnit_Framework_TestCase
         $data = $this->harvester->fetchData();
         $data = current($data);
 
-        $this->assertArrayHasKey('Rule1', $data);
         $this->assertCount(3, $data['Rule1']);
 
         $this->assertArrayHasKey('Rule2', $data);
@@ -81,7 +80,6 @@ class HarvesterTest extends \PHPUnit_Framework_TestCase
         // Get data
         $data = current($harvestData);
 
-        $this->assertArrayHasKey('Rule1', $data);
         $this->assertCount(3, $data['Rule1']);
 
         $this->assertArrayHasKey('Rule2', $data);
@@ -89,6 +87,5 @@ class HarvesterTest extends \PHPUnit_Framework_TestCase
 
         $this->assertArrayHasKey('_custom', $data);
         $this->assertEquals($custom, current($data['_custom']));
-
     }
 }

@@ -10,7 +10,6 @@
 
     "require": {
 		"zendframework/zend-http": "~2.2",
-		"zendframework/zend-debug": "~2.2",
         "webb4you/dom-selector" : "master"
 	},
     "require-dev":{
