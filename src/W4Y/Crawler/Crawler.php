@@ -5,6 +5,8 @@ use W4Y\Crawler\Parser\Parser;
 use W4Y\Crawler\Parser\ParserInterface;
 use W4Y\Crawler\Plugin\PluginInterface;
 use W4Y\Crawler\Client\ClientInterface;
+use W4Y\Crawler\Storage\StorageInterface;
+use W4Y\Crawler\Storage\Memory as StorageMemory;
 use W4Y\Crawler\Plugin;
 
 /**
@@ -14,7 +16,6 @@ use W4Y\Crawler\Plugin;
  */
 class Crawler
 {
-
     private $defaultOptions = array(
         'maxUrlFollows' => 100,
         'maxUrlQue'     => 1000,
@@ -28,8 +29,8 @@ class Crawler
     private $crawledIndex = 0;
     private $crawlerRunning = false;
 
-    /** @var array $storage */
-    public $storage = array();
+    /** @var StorageInterface $storage */
+    public $storage;
 
     /** @var ParserInterface $parser */
     private $parser;
@@ -54,7 +55,6 @@ class Crawler
     const STATS_SEQUENCE                = 'sequence';
 
     const DATA_TYPE_PENDING             = 'pendingUrls';
-    const DATA_TYPE_PENDING_BACKLOG     = 'pendingBacklogUrls';
     const DATA_TYPE_EXCLUDED            = 'excludedUrls';
     const DATA_TYPE_FAILED              = 'failedUrls';
     const DATA_TYPE_CRAWLED             = 'crawledUrls';
@@ -78,9 +78,55 @@ class Crawler
         if (null !== $client) {
             $this->setClient($client);
         }
+
+        $this->storage = new StorageMemory();
     }
 
     /**
+     * Add data to the storage.
+     *
+     * @param $listType
+     * @param $data
+     */
+    private function addToStorage($listType, $data)
+    {
+        $this->getStorage()->add($listType, $data);
+    }
+
+    /**
+     * Fetch data from the storage.
+     *
+     * @param $listType
+     * @return mixed
+     */
+    private function getFromStorage($listType)
+    {
+        return $this->getStorage()->get($listType);
+    }
+
+    /**
+     * Set data to the storage.
+     * Will overwrite existing data.
+     *
+     * @param $listType
+     * @param $data
+     */
+    private function setToStorage($listType, $data)
+    {
+        $this->getStorage()->set($listType, $data);
+    }
+
+    /**
+     * Reset the storage
+     */
+    private function resetStorage()
+    {
+        $this->getStorage()->reset();
+    }
+
+    /**
+     * Add to a data list.
+     *
      * @param $listType
      * @param $value
      * @param null $key
@@ -88,52 +134,14 @@ class Crawler
      */
     public function addToList($listType, $value, $key = null)
     {
-        $currentStorageData = $this->getStorage($listType);
-
+        $currentStorageData = $this->getFromStorage($listType);
         if (!empty($key)) {
             $data = array_merge($currentStorageData, array($key => $value));
-            $this->setStorage($listType, $data);
+            $this->setToStorage($listType, $data);
         } else {
             $value = $this->formatUrl($value);
-            $data = array_merge($currentStorageData, array($this->hashString($value) => $value));
-            $this->addToStorage($listType, $data);
+            $this->addToStorage($listType, array($this->hashString($value) => $value));
         }
-    }
-
-    /**
-     * @param $listType
-     * @param $data
-     */
-    private function addToStorage($listType, $data)
-    {
-        if (!isset($this->storage[$listType])) {
-            $this->storage[$listType] = array();
-        }
-
-        $this->storage[$listType] = array_merge($this->storage[$listType], $data);
-    }
-
-    private function getStorage($listType)
-    {
-        if (!isset($this->storage[$listType])) {
-            $this->storage[$listType] = array();
-        }
-
-        return $this->storage[$listType];
-    }
-
-    private function setStorage($listType, $data)
-    {
-        if (!isset($this->storage[$listType])) {
-            $this->storage[$listType] = array();
-        }
-
-        $this->storage[$listType] = $data;
-    }
-
-    private function resetStorage()
-    {
-        $this->storage = array();
     }
 
     /**
@@ -159,7 +167,7 @@ class Crawler
      */
     public function getList($listType)
     {
-        $data = $this->getStorage($listType);
+        $data = $this->getFromStorage($listType);
 
         return $data;
     }
@@ -261,7 +269,7 @@ class Crawler
         $url = array_shift($pendingUrls);
 
         // Populate list.
-        $this->setStorage(self::DATA_TYPE_PENDING, $pendingUrls);
+        $this->setToStorage(self::DATA_TYPE_PENDING, $pendingUrls);
 //        $this->pendingUrls = $pendingUrls;
 
         return $this->formatUrl($url);
@@ -340,6 +348,16 @@ class Crawler
         return $this;
     }
 
+    public function setStorage(StorageInterface $storage)
+    {
+        $this->storage = $storage;
+    }
+
+    public function getStorage()
+    {
+        return $this->storage;
+    }
+
     /**
      * Get clients
      *
@@ -384,16 +402,6 @@ class Crawler
         $this->clearClients();
         $this->clearPlugins();
         $this->clearRequestFilters();
-
-        $this->crawledUrls = array();
-        $this->pendingUrls = array();
-        $this->excludedUrls = array();
-        $this->failedUrls = array();
-        $this->externalFollows = array();
-        $this->externalUrls = array();
-        $this->crawlerFoundUrls = array();
-        $this->crawlerFound = array();
-
         $this->resetStorage();
     }
 

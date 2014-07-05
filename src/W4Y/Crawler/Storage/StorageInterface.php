@@ -1,5 +1,5 @@
 <?php
-namespace W4Y\Crawler\Sorage;
+namespace W4Y\Crawler\Storage;
 
 /**
  * StorageInterface
