@@ -369,6 +369,10 @@ class Crawler
     }
 
     /**
+     * The current active client.
+     *
+     * When using round robin crawl the active client will be reset on each request.
+     *
      * @return ClientInterface
      */
     public function getClient()
@@ -380,7 +384,6 @@ class Crawler
 
     /**
      * Remove all clients from array.
-     * All crawls after this will be performed via localhost.
      *
      * @return \W4Y\Crawler\Crawler
      */
@@ -392,11 +395,19 @@ class Crawler
         return $this;
     }
 
+    /**
+     * Clear all request filters
+     */
     public function clearRequestFilters()
     {
         $this->requestFilter = array();
     }
 
+    /**
+     * Reset the core crawler data as it was just as it was when
+     * the Crawler was initialized.
+     *
+     */
     public function reset()
     {
         $this->clearClients();
@@ -418,7 +429,7 @@ class Crawler
     /**
      * Get the state of the crawler
      *
-     * @param boolean $status
+     * @return bool
      */
     public function getCrawlerStatus()
     {
@@ -474,7 +485,7 @@ class Crawler
     {
         $crawled = $this->getCrawledUrls();
 
-        return array_shift($crawled);
+        return array_pop($crawled);
     }
 
     public function hashString($string)

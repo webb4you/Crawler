@@ -260,14 +260,31 @@ class Harvester
         }
     }
 
-    public function filterData($data)
+    /**
+     * Filter the array of fetched data.
+     *
+     * @param $data
+     * @return array
+     */
+    public function filterRawData($data)
     {
-        if (isset($data[0])) {
-            $data = current($data);
+        $filteredData = array();
+        foreach ($data as $key => $dataArray) {
+            $filteredData[$key] = $this->filterDataArray($dataArray);
         }
 
-        $filteredData = array();
+        return $filteredData;
+    }
 
+    /**
+     * Filter fetched data
+     *
+     * @param $data
+     * @return array
+     */
+    private function filterDataArray($data)
+    {
+        $dataArray = array();
         foreach ($data as $dKey => $dVal) {
 
             if (is_array($dVal)) {
@@ -277,18 +294,18 @@ class Harvester
                     if (is_array($dVal2)) {
 
                         if (!empty($dVal2['text'])) {
-                            $filteredData[$dKey][] = trim($dVal2['text']);
+                            $dataArray[$dKey][] = trim($dVal2['text']);
                         }
 
                     } else {
-                        $filteredData[$dKey][$dKey2] = trim($dVal2);
+                        $dataArray[$dKey][$dKey2] = trim($dVal2);
                     }
                 }
             } else {
-                $filteredData[$dKey] = trim($dVal);
+                $dataArray[$dKey] = trim($dVal);
             }
         }
 
-        return $filteredData;
+        return $dataArray;
     }
 }

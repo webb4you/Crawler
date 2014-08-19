@@ -90,7 +90,9 @@ class Scraper extends Harvester implements PluginInterface
     public function preRequest(Crawler $crawler) {}
 
     /**
-     * On Success Hook
+     * On Success
+     *
+     * When a page is crawled succesfully we harvest the html body.
      *
      * @param \W4Y\Crawler\Crawler $crawler
      */
@@ -98,15 +100,15 @@ class Scraper extends Harvester implements PluginInterface
     {
         $url = $crawler->getClient()->getUrl();
 
-        if ($this->canBeHarvested($url)) {
-
-            $this->harvest(
-                $crawler->hashString($url), // Key
-                $crawler->getClient()->getBody(), // Html
-                $crawler->getLastRequestData() // Custom Data
-            );
-
+        if (!$this->canBeHarvested($url)) {
+            return;
         }
+
+        $this->harvest(
+            $crawler->hashString($url), // Key
+            $crawler->getClient()->getBody(), // Html
+            $crawler->getLastRequestData() // Custom Data
+        );
     }
 
     /**

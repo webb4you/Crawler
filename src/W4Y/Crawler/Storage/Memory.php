@@ -4,9 +4,12 @@ namespace W4Y\Crawler\Storage;
 /**
  * Memory
  *
+ * Save data in memory.
+ *
  */
 class Memory implements StorageInterface
 {
+    /** @var array $storage */
     private $storage = array();
 
     public function add($key, $data)
@@ -18,7 +21,6 @@ class Memory implements StorageInterface
     public function get($key)
     {
         $this->verifyStorage($key);
-
         return $this->storage[$key];
     }
 
