@@ -94,7 +94,7 @@ class Harvester
      */
     public function clearRules()
     {
-        $this->harvestRules = null;
+        $this->harvestRules = array();
     }
 
     /**
@@ -116,6 +116,7 @@ class Harvester
     final public function fetchData()
     {
         $isCallback = false;
+        $callback = null;
 
         $args = func_get_args();
         if (isset($args[0]) && is_callable($args[0])) {
@@ -133,6 +134,11 @@ class Harvester
 
             $file = new \SplFileObject($harvestFile);
             foreach ($file as $lineNr => $line) {
+
+                if (!is_string($line)) {
+                    continue;
+                }
+
                 $_data = unserialize(trim($line));
 
                 if (empty($_data)) {
@@ -233,14 +239,16 @@ class Harvester
 
             try {
                 $res = $sel->query($selector)->result();
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
+                // If we fail to harvest the data set a empty data collection.
+                $res = 'ERROR';
             }
 
             $data[$rule] = $res;
         }
 
         $harvestFile = $this->getHarvestFile();
-        if ($harvestFile) {
+        if (!empty($harvestFile)) {
 
             // When saving to file render type must be an array to
             // easily serialize the data.
