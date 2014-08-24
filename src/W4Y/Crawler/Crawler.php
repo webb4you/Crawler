@@ -689,87 +689,35 @@ class Crawler
         $maxUrlQue = $this->getOption('maxUrlQue');
         $maxConsecutiveFails = 500;
         $failedIterations = 0;
-        $cntFollows = 0;
+        $numberOfSuccessfulUrlFollows = 0;
         $this->setCrawlerStatus(true);
 
         while ($this->getCrawlerStatus()) {
 
             $pendingUrl = $this->getPendingUrl();
+
             if (empty($pendingUrl)) {
                 $this->setCrawlerStatus(false);
                 continue;
             }
 
-            // Set the client to use for this URL
-            $this->roundRobinClient();
+            // Do the Crawl Process
+            $status = $this->handlePendingUrl($pendingUrl);
 
-            $failedIterations++;
-            if (($failedIterations > $maxConsecutiveFails) || ($cntFollows > $maxUrlQue))  {
-                $this->setCrawlerStatus(false);
-            }
+            // If we have failed.
+            if (!$status) {
 
-            // Get first pending URL.
-            if (!$this->canBeCrawled($pendingUrl)) {
-                continue;
-            }
+                $failedIterations++;
 
-            try {
-
-                $this->getClient()->setUrl($pendingUrl);
-
-            } catch (\Exception $e) {
-
-                $this->addToFailed($pendingUrl);
-
-                // Set crawl error
-                $this->setClientStats(self::STATS_ERROR);
-
-                continue;
-            }
-
-            // Execute preRequest
-            $this->executePlugin('preRequest');
-
-            try {
-
-                $result = $this->_doRequest();
-
-                if (false === $result) {
-                    $this->addToFailed($pendingUrl);
-
-                    // Set crawl fail
-                    $this->setClientStats(self::STATS_FAIL);
-
-                    // Execute onFailure
-                    $this->executePlugin('onFailure');
+                if (($failedIterations > $maxConsecutiveFails) || ($numberOfSuccessfulUrlFollows > $maxUrlQue))  {
+                    $this->setCrawlerStatus(false);
                 }
 
-            } catch (\Exception $e) {
-
-                // Failed
-                $this->addToFailed($pendingUrl);
-
-                // Set crawl fail
-                $this->setClientStats(self::STATS_ERROR);
-
-                $dt = array(
-                    'id' => $this->hashString($pendingUrl),
-                    'url' => $pendingUrl,
-                    'status' => 'FAILED',
-                    'error' => $e->getMessage()
-                );
-
-                $this->addToCrawled($dt);
+                continue;
             }
 
-            // Execute postRequest
-            $this->executePlugin('postRequest');
-
-            // Set crawl attempts
-            $this->setClientStats(self::STATS_ATTEMPT);
-
             // Increment follows
-            $cntFollows++;
+            $numberOfSuccessfulUrlFollows++;
 
             // Reset failed iterations
             $failedIterations = 0;
@@ -778,7 +726,7 @@ class Crawler
             $this->crawlerSleep();
 
             // Check for max follows
-            if ($this->getOption('maxUrlFollows') <= $cntFollows) {
+            if ($this->getOption('maxUrlFollows') <= $numberOfSuccessfulUrlFollows) {
                 $this->setCrawlerStatus(false);
                 continue;
             }
@@ -787,7 +735,70 @@ class Crawler
         // Execute postCrawlLoop
         $this->executePlugin('postCrawl');
 
-        echo 'Total Time: ' . (microtime(true) - $startTime) . PHP_EOL;
+        // echo 'Total Time: ' . (microtime(true) - $startTime) . PHP_EOL;
+    }
+
+    private function handlePendingUrl($pendingUrl)
+    {
+        // Set the client to use for this URL
+        $this->roundRobinClient();
+
+        try {
+
+            $this->getClient()->setUrl($pendingUrl);
+
+        } catch (\Exception $e) {
+
+            $this->addToFailed($pendingUrl);
+
+            // Set crawl error
+            $this->setClientStats(self::STATS_ERROR);
+
+            return false;
+        }
+
+        // Execute preRequest
+        $this->executePlugin('preRequest');
+
+        try {
+
+            $result = $this->_doRequest();
+
+            if (false === $result) {
+                $this->addToFailed($pendingUrl);
+
+                // Set crawl fail
+                $this->setClientStats(self::STATS_FAIL);
+
+                // Execute onFailure
+                $this->executePlugin('onFailure');
+            }
+
+        } catch (\Exception $e) {
+
+            // Failed
+            $this->addToFailed($pendingUrl);
+
+            // Set crawl fail
+            $this->setClientStats(self::STATS_ERROR);
+
+            $dt = array(
+                'id' => $this->hashString($pendingUrl),
+                'url' => $pendingUrl,
+                'status' => 'FAILED',
+                'error' => $e->getMessage()
+            );
+
+            $this->addToCrawled($dt);
+        }
+
+        // Execute postRequest
+        $this->executePlugin('postRequest');
+
+        // Set crawl attempts
+        $this->setClientStats(self::STATS_ATTEMPT);
+
+        return true;
     }
 
     private function crawlerSleep()
