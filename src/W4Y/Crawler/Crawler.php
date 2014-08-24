@@ -161,17 +161,6 @@ class Crawler
      */
     public function addToPending($url)
     {
-        // Check for external URL
-        if ((null !== $this->originalHost) && (!$this->getOption('externalFollows')) ) {
-
-            if (false === strpos($url, $this->originalHost) ) {
-                $this->addToExternalUrls($url);
-                $this->addToExcludedUrls($url);
-
-                return $this;
-            }
-        }
-
         $this->addToList(self::DATA_TYPE_PENDING, $url);
 
         return $this;
@@ -644,6 +633,18 @@ class Crawler
      */
     private function canBeCrawled($url)
     {
+        // Check for external URL
+        if ((null !== $this->originalHost) && (!$this->getOption('externalFollows')) ) {
+
+            // Check if URL contains the original domain.
+            if (false === strpos($url, $this->originalHost) ) {
+                $this->addToExternalUrls($url);
+                $this->addToExcludedUrls($url);
+
+                return false;
+            }
+        }
+
         if ($this->hasInStorage(self::DATA_TYPE_CRAWLED, $this->hashString($url))) {
             return false;
         }
@@ -699,8 +700,8 @@ class Crawler
                 $this->setCrawlerStatus(false);
                 continue;
             }
-            echo 'CRAWLING::' . $pendingUrl . PHP_EOL;
-            // Set the client
+
+            // Set the client to use for this URL
             $this->roundRobinClient();
 
             $failedIterations++;
@@ -709,18 +710,17 @@ class Crawler
             }
 
             // Get first pending URL.
-            $followUrl = $pendingUrl;
-            if (!$this->canBeCrawled($followUrl)) {
+            if (!$this->canBeCrawled($pendingUrl)) {
                 continue;
             }
 
             try {
 
-                $this->getClient()->setUrl($followUrl);
+                $this->getClient()->setUrl($pendingUrl);
 
             } catch (\Exception $e) {
 
-                $this->addToFailed($followUrl);
+                $this->addToFailed($pendingUrl);
 
                 // Set crawl error
                 $this->setClientStats(self::STATS_ERROR);
@@ -736,7 +736,7 @@ class Crawler
                 $result = $this->_doRequest();
 
                 if (false === $result) {
-                    $this->addToFailed($followUrl);
+                    $this->addToFailed($pendingUrl);
 
                     // Set crawl fail
                     $this->setClientStats(self::STATS_FAIL);
@@ -748,14 +748,14 @@ class Crawler
             } catch (\Exception $e) {
 
                 // Failed
-                $this->addToFailed($followUrl);
+                $this->addToFailed($pendingUrl);
 
                 // Set crawl fail
                 $this->setClientStats(self::STATS_ERROR);
 
                 $dt = array(
-                    'id' => $this->hashString($followUrl),
-                    'url' => $followUrl,
+                    'id' => $this->hashString($pendingUrl),
+                    'url' => $pendingUrl,
                     'status' => 'FAILED',
                     'error' => $e->getMessage()
                 );
