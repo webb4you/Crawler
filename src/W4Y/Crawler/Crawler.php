@@ -161,6 +161,17 @@ class Crawler
      */
     public function addToPending($url)
     {
+        // Check for external URL
+        if ((null !== $this->originalHost) && (!$this->getOption('externalFollows')) ) {
+
+            if (false === strpos($url, $this->originalHost) ) {
+                $this->addToExternalUrls($url);
+                $this->addToExcludedUrls($url);
+
+                return $this;
+            }
+        }
+
         $this->addToList(self::DATA_TYPE_PENDING, $url);
 
         return $this;
@@ -703,15 +714,6 @@ class Crawler
                 continue;
             }
 
-            // Check for external URL
-            if (!$this->getOption('externalFollows')) {
-                if (strpos($followUrl, $this->originalHost) === false) {
-                    $this->addToExternalUrls($followUrl);
-                    $this->addToExcludedUrls($followUrl);
-                    continue;
-                }
-            }
-
             try {
 
                 $this->getClient()->setUrl($followUrl);
@@ -773,10 +775,8 @@ class Crawler
             // Reset failed iterations
             $failedIterations = 0;
 
-            $sleepInterval = $this->getOption('sleepInterval');
-            if ($sleepInterval) {
-                sleep($sleepInterval);
-            }
+            // Sleep
+            $this->crawlerSleep();
 
             // Check for max follows
             if ($this->getOption('maxUrlFollows') <= $cntFollows) {
@@ -789,6 +789,14 @@ class Crawler
         $this->executePlugin('postCrawl');
 
         echo 'Total Time: ' . (microtime(true) - $startTime) . PHP_EOL;
+    }
+
+    private function crawlerSleep()
+    {
+        $sleepInterval = $this->getOption('sleepInterval');
+        if ($sleepInterval) {
+            sleep($sleepInterval);
+        }
     }
 
     /**
