@@ -1,5 +1,6 @@
 <?php
 namespace W4Y\Crawler\Storage;
+use SebastianBergmann\Exporter\Exception;
 
 /**
  * Apc
@@ -74,9 +75,14 @@ class Apc implements StorageInterface
     private function saveStorage($dataType, $apcData = null)
     {
         if (null !== $apcData) {
-            $s = apc_add($dataType, $apcData, 86400);
+            $status = apc_add($dataType, $apcData, 86400);
         } else {
-            apc_store($dataType, $this->storage[$dataType]);
+            $status = apc_store($dataType, $this->storage[$dataType]);
+        }
+
+        if (empty($status)) {
+
+            throw new \Exception('Error saving to APC');
         }
     }
 
