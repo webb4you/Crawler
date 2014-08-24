@@ -10,14 +10,18 @@ use W4Y\Crawler\Crawler;
  */
 class MySQL implements StorageInterface
 {
-    /** @var \SQLiteDatabase $db */
-    private $db = array();
+    /** @var \PDO  $db */
+    private $db;
 
     public function __construct($user, $pass, $database, $host = '127.0.0.1')
     {
         $db = $this->createConnection($user, $pass, $database, $host);
-        $this->db = $db;
 
+        if (empty($db)) {
+            throw new \Exception('Could not create Database Connection');
+        }
+
+        $this->db = $db;
         $this->setUpDatabase();
     }
 
@@ -83,14 +87,50 @@ class MySQL implements StorageInterface
 
     public function reset()
     {
-        $tables = $this->getTables();
         $queryTpl = 'DROP TABLE IF EXISTS `%s`';
+
+        $this->executeOnTables($queryTpl);
+        $this->setUpDatabase();
+    }
+
+    /**
+     * @param $user
+     * @param $password
+     * @param $database
+     * @param $host
+     * @return null|\PDO
+     */
+    private function createConnection($user, $password, $database, $host)
+    {
+        $dsn = sprintf('mysql:dbname=%s;host=%s', $database, $host);
+        $db = null;
+
+        /** @var \PDO $db */
+        $db = new \PDO($dsn, $user, $password);
+
+        return $db;
+    }
+
+    private function setUpDatabase()
+    {
+        $queryTpl = 'CREATE TABLE `%s` (
+            id INT AUTO_INCREMENT,
+            `parentKey` char(32),
+            `key` char(32),
+            `data` MEDIUMTEXT,
+            PRIMARY KEY (id), UNIQUE (`parentKey`, `key`))';
+
+        $this->executeOnTables($queryTpl);
+    }
+
+    private function executeOnTables($queryTpl)
+    {
+        $tables = $this->getTables();
+
         foreach ($tables as $tableName) {
             $query = sprintf($queryTpl, $tableName);
             $this->db->exec($query);
         }
-
-        $this->setUpDatabase();
     }
 
     private function getTables()
@@ -107,27 +147,4 @@ class MySQL implements StorageInterface
 
         return $tables;
     }
-
-    private function createConnection($user, $password, $database, $host)
-    {
-        $dsn = sprintf('mysql:dbname=%s;host=%s', $database, $host);
-        $db = null;
-
-        $db = new \PDO($dsn, $user, $password);
-
-        return $db;
-    }
-
-    private function setUpDatabase()
-    {
-        $tables = $this->getTables();
-
-        $queryTpl = 'CREATE TABLE `%s` (id INT AUTO_INCREMENT, `parentKey` char(32), `key` char(32), `data` MEDIUMTEXT, PRIMARY KEY (id), UNIQUE (`parentKey`, `key`))';
-
-        foreach ($tables as $tableName) {
-            $query = sprintf($queryTpl, $tableName);
-            $this->db->exec($query);
-        }
-    }
-
 }
