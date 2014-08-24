@@ -182,6 +182,10 @@ class Parser implements ParserInterface
         // Remove the port from the url
         $url = preg_replace('#\:[0-9]{2,4}#', '', $url);
 
+        if (is_array($url)) {
+            return 'FORMAT ERROR';
+        }
+
         // Check for a file extension in URL or query string.
         if (preg_match('#\/?.*\.[a-zA-Z]{2,4}(?!\/)$|\?.*#', $url)) {
 

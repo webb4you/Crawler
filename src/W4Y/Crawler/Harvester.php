@@ -68,7 +68,7 @@ class Harvester
     /**
      * Get the harvest file
      *
-     * @return bool|null
+     * @return bool|string|null
      */
     public function getHarvestFile()
     {
@@ -126,7 +126,7 @@ class Harvester
 
         $harvestData = array();
         $harvestFile = $this->getHarvestFile();
-        if ($harvestFile) {
+        if (is_string($harvestFile)) {
 
             if (!is_file($harvestFile)) {
                 return false;

@@ -662,7 +662,7 @@ class Crawler
      */
     public function crawl(array $options = array())
     {
-        $startTime = microtime(true);
+        // $startTime = microtime(true);
 
         // Check for url's
         if (!empty($options['url'])) {
