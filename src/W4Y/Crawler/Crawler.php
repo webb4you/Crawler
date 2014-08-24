@@ -415,7 +415,6 @@ class Crawler
     public function clearClients()
     {
         $this->clients = array();
-        $this->client = null;
 
         return $this;
     }

@@ -95,7 +95,6 @@ class Filter
      */
     private function filterTypeToMethod($type)
     {
-        $allow = false;
         switch ($type) {
 
             case self::MUST_CONTAIN:
