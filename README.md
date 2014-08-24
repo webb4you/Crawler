@@ -1,6 +1,7 @@
 Crawler
 ===========
 [![Build Status](https://travis-ci.org/webb4you/Crawler.svg?branch=master)](https://travis-ci.org/webb4you/Crawler)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/webb4you/Crawler/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/webb4you/Crawler/?branch=master)
 
 Crawler is a basic PHP Crawler that is very simple to use and is easily adaptable to fit your needs. You can add plugins
 that can be used to implement your own logic at key moments during the crawl process.
