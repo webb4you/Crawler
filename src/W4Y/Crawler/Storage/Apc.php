@@ -2,12 +2,12 @@
 namespace W4Y\Crawler\Storage;
 
 /**
- * Memory
+ * Apc
  *
  * Save data in memory.
  *
  */
-class Memory implements StorageInterface
+class Apc implements StorageInterface
 {
     /** @var array $storage */
     private $storage = array();
@@ -29,6 +29,8 @@ class Memory implements StorageInterface
         } else {
             $this->storage[$dataType][$dataKey] = $dataValue;
         }
+
+        $this->saveStorage($dataType);
     }
 
     public function get($dataType, $fetchSingleResult = false)
@@ -57,9 +59,11 @@ class Memory implements StorageInterface
 
     public function remove($dataType, $id)
     {
+        $this->verifyStorage($dataType);
        // echo print_r($this->storage[$dataType]);
         unset($this->storage[$dataType][$id]);
        // echo print_r($this->storage[$dataType]);
+        $this->saveStorage($dataType);
     }
 
     public function reset()
@@ -67,10 +71,32 @@ class Memory implements StorageInterface
         $this->storage = array();
     }
 
+    private function saveStorage($dataType, $apcData = null)
+    {
+        if (null !== $apcData) {
+            $s = apc_add($dataType, $apcData, 86400);
+        } else {
+            apc_store($dataType, $this->storage[$dataType]);
+        }
+    }
+
     private function verifyStorage($dataType)
     {
-        if (!isset($this->storage[$dataType])) {
-            $this->storage[$dataType] = array();
+        $apcData = apc_fetch($dataType);
+        //var_dump('DATA::', $apcData);
+
+        if (empty($apcData)) {
+            $apcData = array();
+            $this->saveStorage($dataType, $apcData);
         }
+
+        //var_dump($apcData);
+        $this->storage[$dataType] = $apcData;
+        //die;
+
+
+//        if (!isset($this->storage[$dataType])) {
+//            $this->storage[$dataType] = array();
+//        }
     }
 }

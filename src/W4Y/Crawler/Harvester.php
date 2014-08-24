@@ -94,7 +94,7 @@ class Harvester
      */
     public function clearRules()
     {
-        $this->harvestRules = null;
+        $this->harvestRules = array();
     }
 
     /**
@@ -116,6 +116,7 @@ class Harvester
     final public function fetchData()
     {
         $isCallback = false;
+        $callback = null;
 
         $args = func_get_args();
         if (isset($args[0]) && is_callable($args[0])) {
@@ -233,7 +234,9 @@ class Harvester
 
             try {
                 $res = $sel->query($selector)->result();
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
+                // If an error occurs just ignore this rule and continue.
+                continue;
             }
 
             $data[$rule] = $res;

@@ -7,8 +7,9 @@ namespace W4Y\Crawler\Storage;
  */
 interface StorageInterface
 {
-    public function add($key, $data);
-    public function get($key);
-    public function set($key, $data);
+    public function add($dataType, $data);
+    public function get($dataType, $fetchSingleResult = false);
+    public function has($dataType, $id);
+    public function remove($dataType, $id);
     public function reset();
 }

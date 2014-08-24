@@ -4,15 +4,28 @@ namespace W4Y\Tests\Crawler;
 use W4Y\Crawler\Crawler;
 use W4Y\Crawler\Filter;
 use W4Y\Tests\Crawler\Client\MockClient;
+use W4Y\Crawler\Storage\Memory as Storage;
 
 class CrawlerTest extends \PHPUnit_Framework_TestCase
 {
     /** @var Crawler $crawler */
     private $crawler;
 
+    private $storage;
+
     public function setUp()
     {
         $this->crawler = new Crawler();
+
+        $this->storage = new Storage();
+        $this->storage->reset();
+
+        $this->crawler->setStorage($this->storage);
+    }
+
+    public function tearDown()
+    {
+        //$this->storage->reset();
     }
 
     public function testCanAddPendingUrls()
@@ -335,6 +348,12 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         // added to the queue if they were already found. So 5 url's + the original = 6 - the external domain is 5.
         // We should have pending 5 - maxUrlFollows = 1
         $pendingUrls = $this->crawler->getPending();
+        $crawled = $this->crawler->getCrawledUrls();
+
+//        echo print_r($pendingUrls, 1);
+//        echo print_r($crawled, 1);
+//        die;
+
         $this->assertCount(1, $pendingUrls);
     }
 
@@ -354,15 +373,19 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
 
         $this->crawler->setOption('maxUrlFollows', 2);
 
+        $pendingUrls1 = $this->crawler->getPending();
+
         // Crawl
         $this->crawler->crawl();
 
         // Max set at 2 so we have 1 pending url
         $pendingUrls = $this->crawler->getPending();
+
         $this->assertCount(1, $pendingUrls);
 
         // Max set at 2 so we crawled 2 url's
         $crawledUrls = $this->crawler->getCrawledUrls();
+
         $this->assertCount(2, $crawledUrls);
     }
 
