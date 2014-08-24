@@ -872,7 +872,6 @@ class Crawler
             foreach ($filteredLinks as $l) {
 
                 if ($this->canBeCrawled($l->url)) {
-                    //echo 'ADDING TO PENDING::' . $l->url . ' - ' . $this->hashString($l->url) . PHP_EOL;
                     $this->addToPending($l->url);
                 }
             }

@@ -142,14 +142,13 @@ class Parser implements ParserInterface
 
             // Check if the url PATH is ending with a file extension and/or possible slash.
             if (preg_match('#\.[a-zA-Z]{2,4}\/?$#', $path)) {
-                $oPath = $path;
+
                 if ($path[strlen($path)-1] == '/') {
                     $path = substr($path, 0, -1);
                 }
                 $tmp = explode('/', $path);
                 array_pop($tmp);
                 $path = implode('/', $tmp) . '/';
-                //echo 'FILE PATH --- ' . $oPath . ' : : ' . $path . '<br>';
             }
 
             // If URL begins with slash, then it should link from the
@@ -161,7 +160,6 @@ class Parser implements ParserInterface
                 // Check for path in url
                 $tmp  		= explode('/', trim($url, '/'));
                 $urlPrefix 	= array_shift($tmp);
-                $tmpP 		= trim($path, '/');
 
                 if (!empty($urlPrefix) && strpos($path, $urlPrefix) !== false) {
                     $path = '';

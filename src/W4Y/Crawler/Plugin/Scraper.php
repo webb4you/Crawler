@@ -12,7 +12,7 @@ use W4Y\Crawler\Filter;
  */
 class Scraper extends Harvester implements PluginInterface
 {
-    /** @var Filter $filters */
+    /** @var Filter[] $filters */
     private $filters = array();
 
     /*
