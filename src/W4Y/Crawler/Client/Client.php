@@ -7,9 +7,26 @@ namespace W4Y\Crawler\Client;
  */
 class Client implements ClientInterface
 {
+    private $curl;
     private $url;
     private $body;
     private $responseCode;
+
+    public function __construct()
+    {
+        $ch = curl_init();
+
+        curl_setopt($ch, CURLOPT_HEADER, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+
+        $this->curl = $ch;
+    }
+
+    public function __destruct()
+    {
+        curl_close($this->curl);
+    }
 
     public function setUrl($url)
     {
@@ -41,14 +58,15 @@ class Client implements ClientInterface
             throw new \Exception('You must first set a URL to request.');
         }
 
-        $status = @file_get_contents($this->url);
-        if (($status)) {
-            $this->setBody($status);
-            $this->setResponseCode(200);
-        } else {
-            $this->setBody('Error');
-            $this->setResponseCode(404);
-        }
+        curl_setopt($this->curl, CURLOPT_URL, $this->url);
+
+        $response = curl_exec($this->curl);
+        $responseInfo = curl_getinfo($this->curl);
+
+        $this->setResponseCode($responseInfo['http_code']);
+
+        $this->setBody($response);
+        $this->url = $responseInfo['url'];
 
         return $this;
     }
