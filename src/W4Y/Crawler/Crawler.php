@@ -6,13 +6,16 @@ use W4Y\Crawler\Parser\ParserInterface;
 use W4Y\Crawler\Plugin\PluginInterface;
 use W4Y\Crawler\Client\ClientInterface;
 use W4Y\Crawler\Storage\StorageInterface;
+use W4Y\Crawler\DataValue as CrawlerValue;
 use W4Y\Crawler\Storage\Memory as StorageMemory;
 use W4Y\Crawler\Plugin;
+
+use W4Y\Crawler\StorageManager;
 
 /**
  * Crawler
  *
- * @author Ilan Rivers <ilan@webb4you.com>
+ * @author Ilan R <ilan@webb4you.com>
  */
 class Crawler
 {
@@ -29,7 +32,7 @@ class Crawler
     private $crawledIndex = 0;
     private $crawlerRunning = false;
 
-    /** @var StorageInterface $storage */
+    /** @var StorageManager $storage */
     public $storage;
 
     /** @var ParserInterface $parser */
@@ -45,22 +48,6 @@ class Crawler
     private $clients = array();
     private $clientStats = array();
     private $activeClientQueue = 1;
-
-    const STATS_SUCCESS                 = 'success';
-    const STATS_FAIL                    = 'fails';
-    const STATS_ERROR                   = 'errors';
-    const STATS_CRAWL                   = 'crawls';
-    const STATS_ATTEMPT                 = 'attempts';
-    const STATS_ID                      = 'id';
-    const STATS_SEQUENCE                = 'sequence';
-
-    const DATA_TYPE_PENDING             = 'pendingUrls';
-    const DATA_TYPE_EXCLUDED            = 'excludedUrls';
-    const DATA_TYPE_FAILED              = 'failedUrls';
-    const DATA_TYPE_CRAWLED             = 'crawledUrls';
-    const DATA_TYPE_CRAWLER_FOUND       = 'crawlerFound';
-    const DATA_TYPE_CRAWLED_EXTERNAL    = 'externalFollows';
-    const DATA_TYPE_EXTERNAL_URL        = 'externalUrls';
 
     public function __construct(array $options = array(), ClientInterface $client = null, ParserInterface $parser = null)
     {
@@ -78,60 +65,7 @@ class Crawler
             $this->setClient($client);
         }
 
-        $this->storage = new StorageMemory();
-    }
-
-    /**
-     * Add data to the storage.
-     *
-     * @param $listType
-     * @param $data
-     * @param $parentKey
-     */
-    private function addToStorage($listType, $data, $parentKey = null)
-    {
-        $this->getStorage()->add($listType, $data, $parentKey);
-    }
-
-    /**
-     * @param $listType
-     * @param $key
-     * @return bool
-     */
-    private function hasInStorage($listType, $key)
-    {
-        return $this->getStorage()->has($listType, $key);
-    }
-
-    /**
-     * Fetch one data object from the storage.
-     *
-     * @param $listType
-     * @param $key
-     */
-    private function removeFromStorage($listType, $key)
-    {
-        $this->getStorage()->remove($listType, $key);
-    }
-
-    /**
-     * Fetch data from the storage.
-     *
-     * @param $listType
-     * @param bool $fetchSingleResult
-     * @return array
-     */
-    private function getFromStorage($listType, $fetchSingleResult = false)
-    {
-        return $this->getStorage()->get($listType, $fetchSingleResult);
-    }
-
-    /**
-     * Reset the storage
-     */
-    private function resetStorage()
-    {
-        $this->getStorage()->reset();
+        $this->storage = new StorageManager(new StorageMemory());
     }
 
     /**
@@ -146,12 +80,12 @@ class Crawler
     {
         if (is_string($value)) {
             $value = $this->formatUrl($value);
-            $this->addToStorage($listType, array($this->hashString($value) => $value));
+            $this->getStorage()->addToStorage($listType, array($this->hashString($value) => $value));
         } else {
             $saveData = array(
                 $this->hashString($value['url']) => $value
             );
-            $this->addToStorage($listType, $saveData, $parentKey);
+            $this->getStorage()->addToStorage($listType, $saveData, $parentKey);
         }
     }
 
@@ -161,7 +95,7 @@ class Crawler
      */
     public function addToPending($url)
     {
-        $this->addToList(self::DATA_TYPE_PENDING, $url);
+        $this->addToList(CrawlerValue::DATA_TYPE_PENDING, $url);
 
         return $this;
     }
@@ -178,7 +112,7 @@ class Crawler
      */
     public function getList($listType)
     {
-        $data = $this->getFromStorage($listType);
+        $data = $this->getStorage()->getFromStorage($listType);
 
         return $data;
     }
@@ -189,7 +123,7 @@ class Crawler
      */
     public function addToPendingBacklog($url)
     {
-        $this->addToList(self::DATA_TYPE_PENDING_BACKLOG, $url);
+        $this->addToList(CrawlerValue::DATA_TYPE_PENDING_BACKLOG, $url);
 
         return $this;
     }
@@ -200,7 +134,7 @@ class Crawler
      */
     public function addToFailed($url)
     {
-        $this->addToList(self::DATA_TYPE_FAILED, $url);
+        $this->addToList(CrawlerValue::DATA_TYPE_FAILED, $url);
 
         return $this;
     }
@@ -217,7 +151,7 @@ class Crawler
         foreach ($links as $link) {
             $link = (array) $link;
             $link['parentKey'] = $parentKey;
-            $this->addToList(self::DATA_TYPE_CRAWLER_FOUND, $link, $parentKey);
+            $this->addToList(CrawlerValue::DATA_TYPE_CRAWLER_FOUND, $link, $parentKey);
         }
 
         return $this;
@@ -225,14 +159,14 @@ class Crawler
 
     private function addToExternalUrls($url)
     {
-        $this->addToList(self::DATA_TYPE_EXTERNAL_URL, $url);
+        $this->addToList(CrawlerValue::DATA_TYPE_EXTERNAL_URL, $url);
 
         return $this;
     }
 
     private function addToExcludedUrls($url)
     {
-        $this->addToList(self::DATA_TYPE_EXCLUDED, $url);
+        $this->addToList(CrawlerValue::DATA_TYPE_EXCLUDED, $url);
 
         return $this;
     }
@@ -251,7 +185,7 @@ class Crawler
         $this->crawledIndex++;
         $dt['sequence'] = $this->crawledIndex;
 
-        $this->addToList(self::DATA_TYPE_CRAWLED, $dt);
+        $this->addToList(CrawlerValue::DATA_TYPE_CRAWLED, $dt);
 
         return $this;
     }
@@ -263,7 +197,7 @@ class Crawler
      */
     public function getCrawledUrls()
     {
-        return $this->getList(self::DATA_TYPE_CRAWLED);
+        return $this->getList(CrawlerValue::DATA_TYPE_CRAWLED);
     }
 
     /**
@@ -273,7 +207,7 @@ class Crawler
      */
     public function getFoundUrls()
     {
-        return $this->getList(self::DATA_TYPE_CRAWLER_FOUND);
+        return $this->getList(CrawlerValue::DATA_TYPE_CRAWLER_FOUND);
     }
 
     /**
@@ -283,18 +217,20 @@ class Crawler
      */
     public function getPending()
     {
-        return $this->getList(self::DATA_TYPE_PENDING);
+        return $this->getList(CrawlerValue::DATA_TYPE_PENDING);
     }
 
     public function getPendingUrl($deleteAfterFetch = true)
     {
-        $url = $this->getFromStorage(self::DATA_TYPE_PENDING, $fetchSingleResult = true);
+        $storage = $this->getStorage();
+
+        $url = $storage->getFromStorage(CrawlerValue::DATA_TYPE_PENDING, $fetchSingleResult = true);
 
         $urlKey = current(array_keys($url));
         $url = current(array_values($url));
 
         if ($deleteAfterFetch) {
-            $this->removeFromStorage(self::DATA_TYPE_PENDING, $urlKey);
+            $storage->removeFromStorage(CrawlerValue::DATA_TYPE_PENDING, $urlKey);
         }
 
         return $this->formatUrl($url);
@@ -375,7 +311,7 @@ class Crawler
 
     public function setStorage(StorageInterface $storage)
     {
-        $this->storage = $storage;
+        $this->storage = new StorageManager($storage);
     }
 
     public function getStorage()
@@ -437,7 +373,7 @@ class Crawler
         $this->clearClients();
         $this->clearPlugins();
         $this->clearRequestFilters();
-        $this->resetStorage();
+        $this->getStorage()->resetStorage();
     }
 
     /**
@@ -488,13 +424,13 @@ class Crawler
 
         // Initialize all stats.
         if (!isset($this->clientStats[$clientActive])) {
-            $this->clientStats[$clientActive][self::STATS_ID] = $clientName;
-            $this->clientStats[$clientActive][self::STATS_SEQUENCE] = $clientActive;
-            $this->clientStats[$clientActive][self::STATS_SUCCESS] = 0;
-            $this->clientStats[$clientActive][self::STATS_FAIL] = 0;
-            $this->clientStats[$clientActive][self::STATS_CRAWL] = 0;
-            $this->clientStats[$clientActive][self::STATS_ATTEMPT] = 0;
-            $this->clientStats[$clientActive][self::STATS_ERROR] = 0;
+            $this->clientStats[$clientActive][CrawlerValue::STATS_ID] = $clientName;
+            $this->clientStats[$clientActive][CrawlerValue::STATS_SEQUENCE] = $clientActive;
+            $this->clientStats[$clientActive][CrawlerValue::STATS_SUCCESS] = 0;
+            $this->clientStats[$clientActive][CrawlerValue::STATS_FAIL] = 0;
+            $this->clientStats[$clientActive][CrawlerValue::STATS_CRAWL] = 0;
+            $this->clientStats[$clientActive][CrawlerValue::STATS_ATTEMPT] = 0;
+            $this->clientStats[$clientActive][CrawlerValue::STATS_ERROR] = 0;
         }
 
         $this->clientStats[$clientActive][$statsType]++;
@@ -632,6 +568,8 @@ class Crawler
      */
     private function canBeCrawled($url)
     {
+        $storage = $this->getStorage();
+
         // Check for external URL
         if ((null !== $this->originalHost) && (!$this->getOption('externalFollows')) ) {
 
@@ -644,12 +582,12 @@ class Crawler
             }
         }
 
-        if ($this->hasInStorage(self::DATA_TYPE_CRAWLED, $this->hashString($url))) {
+        if ($storage->hasInStorage(CrawlerValue::DATA_TYPE_CRAWLED, $this->hashString($url))) {
             return false;
         }
 
         // Check if url has been excluded
-        if ($this->hasInStorage(self::DATA_TYPE_EXCLUDED, $this->hashString($url))) {
+        if ($storage->hasInStorage(CrawlerValue::DATA_TYPE_EXCLUDED, $this->hashString($url))) {
             return false;
         }
 
@@ -752,7 +690,7 @@ class Crawler
             $this->addToFailed($pendingUrl);
 
             // Set crawl error
-            $this->setClientStats(self::STATS_ERROR);
+            $this->setClientStats(CrawlerValue::STATS_ERROR);
 
             return false;
         }
@@ -768,7 +706,7 @@ class Crawler
                 $this->addToFailed($pendingUrl);
 
                 // Set crawl fail
-                $this->setClientStats(self::STATS_FAIL);
+                $this->setClientStats(CrawlerValue::STATS_FAIL);
 
                 // Execute onFailure
                 $this->executePlugin('onFailure');
@@ -780,7 +718,7 @@ class Crawler
             $this->addToFailed($pendingUrl);
 
             // Set crawl fail
-            $this->setClientStats(self::STATS_ERROR);
+            $this->setClientStats(CrawlerValue::STATS_ERROR);
 
             $dt = array(
                 'id' => $this->hashString($pendingUrl),
@@ -796,7 +734,7 @@ class Crawler
         $this->executePlugin('postRequest');
 
         // Set crawl attempts
-        $this->setClientStats(self::STATS_ATTEMPT);
+        $this->setClientStats(CrawlerValue::STATS_ATTEMPT);
 
         return true;
     }
@@ -842,7 +780,7 @@ class Crawler
         }
 
         // Set crawl amount
-        $this->setClientStats(self::STATS_CRAWL);
+        $this->setClientStats(CrawlerValue::STATS_CRAWL);
 
         // Verify response
         if (!$this->getClient()->isResponseSuccess()) {
@@ -850,7 +788,7 @@ class Crawler
         }
 
         // Set crawl success
-        $this->setClientStats(self::STATS_SUCCESS);
+        $this->setClientStats(CrawlerValue::STATS_SUCCESS);
 
         // Execute onSuccess
         $this->executePlugin('onSuccess');
