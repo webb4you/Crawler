@@ -2,6 +2,7 @@
 namespace W4Y\Tests\Crawler;
 
 use W4Y\Crawler\Crawler;
+use W4Y\Crawler\DataValue as CrawlerValue;
 use W4Y\Crawler\Filter;
 use W4Y\Tests\Crawler\Client\MockClient;
 use W4Y\Crawler\Storage\Memory as Storage;
@@ -95,7 +96,7 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $clientStats = $this->crawler->getClientStats();
 
         // Client 1 should have crawled 6 URL's.
-        $client1Cnt = $clientStats[1][Crawler::STATS_CRAWL];
+        $client1Cnt = $clientStats[1][CrawlerValue::STATS_CRAWL];
         $this->assertEquals(6, $client1Cnt);
     }
 
@@ -145,15 +146,15 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $clientStats = $this->crawler->getClientStats();
 
         // Client 1 should have crawled 3 URL's.
-        $client1Cnt = $clientStats[1][Crawler::STATS_CRAWL];
+        $client1Cnt = $clientStats[1][CrawlerValue::STATS_CRAWL];
         $this->assertEquals(3, $client1Cnt);
 
         // Client 2 should have crawled 3 URL's.
-        $client2Cnt = $clientStats[2][Crawler::STATS_CRAWL];
+        $client2Cnt = $clientStats[2][CrawlerValue::STATS_CRAWL];
         $this->assertEquals(3, $client2Cnt);
 
         // Client 3 should have crawled 2 URL's.
-        $client3Cnt = $clientStats[3][Crawler::STATS_CRAWL];
+        $client3Cnt = $clientStats[3][CrawlerValue::STATS_CRAWL];
         $this->assertEquals(2, $client3Cnt);
     }
 
@@ -184,8 +185,8 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $clientStats = $this->crawler->getClientStats();
         $stats = $clientStats[1];
 
-        $this->assertEquals(1, $stats[Crawler::STATS_SUCCESS]);
-        $this->assertEquals(1, $stats[Crawler::STATS_ATTEMPT]);
+        $this->assertEquals(1, $stats[CrawlerValue::STATS_SUCCESS]);
+        $this->assertEquals(1, $stats[CrawlerValue::STATS_ATTEMPT]);
 
 
         // Test a failed response
@@ -210,8 +211,8 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $clientStats = $this->crawler->getClientStats();
         $stats = $clientStats[1];
 
-        $this->assertEquals(1, $stats[Crawler::STATS_FAIL]);
-        $this->assertEquals(2, $stats[Crawler::STATS_ATTEMPT]);
+        $this->assertEquals(1, $stats[CrawlerValue::STATS_FAIL]);
+        $this->assertEquals(2, $stats[CrawlerValue::STATS_ATTEMPT]);
 
 
         // Test a exception
@@ -236,10 +237,10 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $clientStats = $this->crawler->getClientStats();
         $stats = $clientStats[1];
 
-        $this->assertEquals(1, $stats[Crawler::STATS_ERROR]);
-        $this->assertEquals(1, $stats[Crawler::STATS_FAIL]);
-        $this->assertEquals(1, $stats[Crawler::STATS_SUCCESS]);
-        $this->assertEquals(3, $stats[Crawler::STATS_CRAWL]);
+        $this->assertEquals(1, $stats[CrawlerValue::STATS_ERROR]);
+        $this->assertEquals(1, $stats[CrawlerValue::STATS_FAIL]);
+        $this->assertEquals(1, $stats[CrawlerValue::STATS_SUCCESS]);
+        $this->assertEquals(3, $stats[CrawlerValue::STATS_CRAWL]);
     }
 
     public function testCanCallPluginSuccessHooks()
@@ -411,7 +412,7 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         // Crawl
         $this->crawler->crawl();
         $stats = $this->crawler->getClientStats();
-        $crawlCnt = $stats[1][Crawler::STATS_CRAWL];
+        $crawlCnt = $stats[1][CrawlerValue::STATS_CRAWL];
         $this->assertEquals(4, $crawlCnt);
 
         $crawled = $this->crawler->getCrawledUrls();
@@ -571,12 +572,12 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $this->crawler->setOption('maxUrlFollows', 2);
         $this->crawler->crawl();
 
-        $crawlerFound = $this->crawler->getList(Crawler::DATA_TYPE_CRAWLER_FOUND);
+        $crawlerFound = $this->crawler->getList(CrawlerValue::DATA_TYPE_CRAWLER_FOUND);
         // First crawl should have found 5 url's
         $this->assertCount(5, current($crawlerFound));
 
         // Pending should be 1 because we found 5 but after filter left with 2 and 1 of the 2 was crawled.
-        $pending = $this->crawler->getList(Crawler::DATA_TYPE_PENDING);
+        $pending = $this->crawler->getList(CrawlerValue::DATA_TYPE_PENDING);
         $this->assertCount(1, $pending);
     }
 
