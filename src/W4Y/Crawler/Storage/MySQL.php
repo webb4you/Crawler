@@ -1,6 +1,6 @@
 <?php
 namespace W4Y\Crawler\Storage;
-use W4Y\Crawler\Crawler;
+use W4Y\Crawler\DataValue as CrawlerValue;
 
 /**
  * MySQL DB
@@ -46,6 +46,15 @@ class MySQL implements StorageInterface
                 $data = array_merge($data, $jsonData);
             }
 
+        }
+
+        if ($singleResult) {
+
+            $dataKey = current(array_keys($data));
+            $dataValue = current(array_values($data));
+
+            $data = array();
+            $data[$dataKey] = $dataValue;
         }
 
         return $data;
@@ -136,13 +145,13 @@ class MySQL implements StorageInterface
     private function getTables()
     {
         $tables = array(
-            Crawler::DATA_TYPE_CRAWLED,
-            Crawler::DATA_TYPE_CRAWLED_EXTERNAL,
-            Crawler::DATA_TYPE_CRAWLER_FOUND,
-            Crawler::DATA_TYPE_EXCLUDED,
-            Crawler::DATA_TYPE_EXTERNAL_URL,
-            Crawler::DATA_TYPE_FAILED,
-            Crawler::DATA_TYPE_PENDING
+            CrawlerValue::DATA_TYPE_CRAWLED,
+            CrawlerValue::DATA_TYPE_CRAWLED_EXTERNAL,
+            CrawlerValue::DATA_TYPE_CRAWLER_FOUND,
+            CrawlerValue::DATA_TYPE_EXCLUDED,
+            CrawlerValue::DATA_TYPE_EXTERNAL_URL,
+            CrawlerValue::DATA_TYPE_FAILED,
+            CrawlerValue::DATA_TYPE_PENDING
         );
 
         return $tables;

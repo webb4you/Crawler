@@ -121,17 +121,6 @@ class Crawler
      * @param $url
      * @return $this
      */
-    public function addToPendingBacklog($url)
-    {
-        $this->addToList(CrawlerValue::DATA_TYPE_PENDING_BACKLOG, $url);
-
-        return $this;
-    }
-
-    /**
-     * @param $url
-     * @return $this
-     */
     public function addToFailed($url)
     {
         $this->addToList(CrawlerValue::DATA_TYPE_FAILED, $url);
@@ -225,6 +214,9 @@ class Crawler
         $storage = $this->getStorage();
 
         $url = $storage->getFromStorage(CrawlerValue::DATA_TYPE_PENDING, $fetchSingleResult = true);
+
+        //echo 'Pending URL::' . print_r($url, 1) . PHP_EOL;
+
 
         $urlKey = current(array_keys($url));
         $url = current(array_values($url));
@@ -598,16 +590,9 @@ class Crawler
      * Begin crawling url's in the queuee.
      *
      */
-    public function crawl(array $options = array())
+    public function crawl()
     {
-        // $startTime = microtime(true);
-
-        // Check for url's
-        if (!empty($options['url'])) {
-            foreach ((array) $options['url'] as $u) {
-                $this->addToPending($u);
-            }
-        }
+        //$startTime = microtime(true);
 
         $pendingUrl = $this->getPendingUrl(false);
 
@@ -616,8 +601,7 @@ class Crawler
             throw new \Exception('You have to add atleast one URL to the queue.');
         }
 
-        // First URL in the queue is the original host, save
-        // it so we know if we are crawling external host URL's.
+        // First URL in the queue is the original host, save it so we know if we are crawling external host URL's.
         $uri = new \Zend\Uri\Http($pendingUrl);
         $this->originalHost = $uri->getHost();
 
@@ -641,6 +625,7 @@ class Crawler
 
             // Do the Crawl Process
             $status = $this->handlePendingUrl($pendingUrl);
+
 
             // If we have failed.
             if (!$status) {
@@ -673,7 +658,7 @@ class Crawler
         // Execute postCrawlLoop
         $this->executePlugin('postCrawl');
 
-        // echo 'Total Time: ' . (microtime(true) - $startTime) . PHP_EOL;
+        //echo 'Total Time: ' . (microtime(true) - $startTime) . PHP_EOL;
     }
 
     private function handlePendingUrl($pendingUrl)
@@ -695,8 +680,12 @@ class Crawler
             return false;
         }
 
+
         // Execute preRequest
         $this->executePlugin('preRequest');
+
+       // $requestHandler = new RequestHandler($this->getClient(), $pendingUrl);
+        //$crawlResponse = $requestHandler->handle();
 
         try {
 
@@ -772,13 +761,6 @@ class Crawler
         );
         $this->addToCrawled($oUrl);
 
-        // If original url was redirected, reset the original host variable.
-        if (0 === $this->crawledIndex && $oUrl['url'] != $oUrl['finalUrl']) {
-            // Reset original host.
-            $uri = new \Zend\Uri\Http($oUrl['finalUrl']);
-            $this->originalHost = $uri->getHost();
-        }
-
         // Set crawl amount
         $this->setClientStats(CrawlerValue::STATS_CRAWL);
 
@@ -829,6 +811,7 @@ class Crawler
             return;
         }
 
+        /** @var PluginInterface $plugin */
         foreach ($plugins as $plugin) {
             if (method_exists($plugin, $hook)) {
                 $plugin->$hook($this);
