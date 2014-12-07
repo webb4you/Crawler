@@ -2,7 +2,6 @@
 namespace W4Y\Crawler\Parser;
 
 use W4Y\Dom\Selector;
-use Zend\Uri\Uri;
 
 class Parser implements ParserInterface
 {
@@ -14,12 +13,28 @@ class Parser implements ParserInterface
         return $this->uri;
     }
 
+    private function parseUrl($url)
+    {
+        $parsed = parse_url($url);
+
+        $defaults = array(
+            'scheme' => 'http',
+            'host' => '',
+            'path' => ''
+        );
+
+        return array_merge($defaults, $parsed);
+    }
+
     public function setDomain($url)
     {
-        $uri = new Uri($url);
+        $uri = $this->parseUrl($url);
         $this->uri = $uri;
 
-        $d = $uri->getScheme() . '://' . $uri->getHost();
+        $scheme = $uri['scheme'];
+        $host = $uri['host'];
+
+        $d = $scheme . '://' . $host;
         $this->domain = $d;
     }
 
@@ -138,7 +153,10 @@ class Parser implements ParserInterface
         if ((strpos($url, '//') === false)) {
 
             $uri  = $this->getUri();
-            $path = $uri->getPath();
+
+            $path = $uri['path'];
+            $scheme = $uri['scheme'];
+            $host = $uri['host'];
 
             // Check if the url PATH is ending with a file extension and/or possible slash.
             if (preg_match('#\.[a-zA-Z]{2,4}\/?$#', $path)) {
@@ -154,7 +172,7 @@ class Parser implements ParserInterface
             // If URL begins with slash, then it should link from the
             // domain root.
             if (isset($url[0]) && $url[0] == '/') {
-                $url = $uri->getScheme() . '://' . $uri->getHost() . $url;
+                $url = $scheme . '://' . $host . $url;
             } else {
 
                 // Check for path in url

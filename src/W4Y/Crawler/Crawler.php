@@ -602,8 +602,8 @@ class Crawler
         }
 
         // First URL in the queue is the original host, save it so we know if we are crawling external host URL's.
-        $uri = new \Zend\Uri\Http($pendingUrl);
-        $this->originalHost = $uri->getHost();
+        $uri = parse_url($pendingUrl);
+        $this->originalHost = $uri['host'];
 
         // Execute preCrawlLoop
         $this->executePlugin('preCrawl');
