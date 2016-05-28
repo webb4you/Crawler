@@ -511,6 +511,67 @@ class CrawlerTest extends \PHPUnit_Framework_TestCase
         $this->assertCount(2, $crawledUrls);
     }
 
+    public function testRequestFilterOrStrategy()
+    {
+        $filter = new Filter('TestFilter', array(
+            array('match' => '#contact#', 'type' => Filter::MUST_MATCH),
+            array('match' => 'help', 'type' => Filter::MUST_NOT_CONTAIN)
+        ));
+
+        // Set filter
+        $this->crawler->setRequestFilter($filter);
+
+        $filter2 = new Filter('TestFilter2', array(
+            array('match' => '#about#', 'type' => Filter::MUST_MATCH)
+        ));
+
+        // Set filter
+        $this->crawler->setRequestFilter($filter2);
+
+
+        // Set crawler clients
+        $this->crawler->setClient(new MockClient(), 'Client 1');
+
+        $url = 'http://www.example.com';
+        $this->crawler->addToPending($url);
+
+        // Set Mock Parser Interface to return URL's
+        $parser = $this->getMock('W4Y\Crawler\Parser\ParserInterface');
+        $parser->expects($this->any())
+            ->method('getUrls')
+            ->will($this->returnValue($this->getUrlSetOne()));
+
+        $parser->expects($this->any())
+            ->method('formatUrl')
+            ->will($this->returnCallback(function() {
+                $args = func_get_args();
+                return trim($args[0]);
+            }));
+
+        // Set parser that will return a fixed set of URL's.
+        $this->crawler->setParser($parser);
+
+        // Set recursive crawl so that found URL's are added to pending queue
+        $this->crawler->setOption('recursiveCrawl', true);
+
+        // Crawl
+        $this->crawler->crawl();
+
+        $crawledUrls = $this->crawler->getCrawledUrls();
+
+        // Second URL crawled should be aboutCrawling.html
+        $url = current(array_slice($crawledUrls, 1, 1));
+        $this->assertEquals('http://www.example.com/aboutCrawling.html', $url['url']);
+
+        // Third URL crawled should be contact.html
+        $url = current(array_slice($crawledUrls, 2, 1));
+        $this->assertEquals('http://www.example.com/contact.html', $url['url']);
+
+        // Should have only crawled 3 urls.
+        $this->assertCount(3, $crawledUrls);
+    }
+
+
     public function testCanAddFoundUrlsIncludingFilteredOnes()
     {
         $filter = new Filter('TestFilter', array(

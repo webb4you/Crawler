@@ -539,15 +539,36 @@ class Crawler
      * @param array $urls
      * @return array
      */
-    private function filterUrlList(array $filters, array $urls)
+    private function filterUrlList(array $filters, array $urls, $filterStrategy = 'AND')
     {
         $toRemove = array();
 
-        foreach ($urls as $key => $u) {
+        if ('or' == strtolower($filterStrategy)) {
 
-            if (!$this->filterUrl($filters, $u->url)) {
-                $toRemove[] = $key;
+            foreach ($urls as $key => $u) {
+
+                // If one filter returns true url will not be excluded.
+                $isExcluded = true;
+                foreach ($filters as $filter) {
+                    if ($this->filterUrl(array($filter), $u->url)) {
+                        $isExcluded = false;
+                        break;
+                    }
+                }
+
+                if ($isExcluded) {
+                    $toRemove[] = $key;
+                }
+
             }
+
+        } else {
+            foreach ($urls as $key => $u) {
+                if (!$this->filterUrl($filters, $u->url)) {
+                    $toRemove[] = $key;
+                }
+            }
+
         }
 
         // Filter strings
@@ -818,7 +839,7 @@ class Crawler
 
             // Filter URL's based on request filter
             $requestUrlFilter = $this->getRequestFilter();
-            $filteredLinks = $this->filterUrlList($requestUrlFilter, $links);
+            $filteredLinks = $this->filterUrlList($requestUrlFilter, $links, 'OR');
             $foundUrls = $this->getList(self::DATA_TYPE_CRAWLER_FOUND_RAW);
             foreach ($filteredLinks as $l) {
                 // Do not add URL's already crawled
