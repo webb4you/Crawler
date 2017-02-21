@@ -301,7 +301,11 @@ class Harvester
 
                     if (is_array($dVal2)) {
 
-                        if (!empty($dVal2['text'])) {
+                        if (!empty($dVal2['tag']) && $dVal2['tag'] == 'img') {
+
+                            $dataArray[$dKey][] = trim($dVal2['attributes']['src']);
+
+                        } elseif (!empty($dVal2['text'])) {
                             $dataArray[$dKey][] = trim($dVal2['text']);
                         }
 
