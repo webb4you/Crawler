@@ -843,7 +843,7 @@ class Crawler
             $requestUrlFilter = $this->getRequestFilter();
             $filteredLinks = $this->filterUrlList($requestUrlFilter, $links, 'OR');
             $foundUrls = $this->getList(self::DATA_TYPE_CRAWLER_FOUND_RAW);
-            
+
             foreach ($filteredLinks as $l) {
                 // Do not add URL's already crawled
                 if (array_key_exists($this->hashString($l->url), $foundUrls)) {
