@@ -545,21 +545,23 @@ class Crawler
 
         if ('or' == strtolower($filterStrategy)) {
 
-            foreach ($urls as $key => $u) {
+            if (!empty($filters)) {
+                foreach ($urls as $key => $u) {
 
-                // If one filter returns true url will not be excluded.
-                $isExcluded = true;
-                foreach ($filters as $filter) {
-                    if ($this->filterUrl(array($filter), $u->url)) {
-                        $isExcluded = false;
-                        break;
+                    // If one filter returns true url will not be excluded.
+                    $isExcluded = true;
+                    foreach ($filters as $filter) {
+                        if ($this->filterUrl(array($filter), $u->url)) {
+                            $isExcluded = false;
+                            break;
+                        }
                     }
-                }
 
-                if ($isExcluded) {
-                    $toRemove[] = $key;
-                }
+                    if ($isExcluded) {
+                        $toRemove[] = $key;
+                    }
 
+                }
             }
 
         } else {
@@ -841,6 +843,7 @@ class Crawler
             $requestUrlFilter = $this->getRequestFilter();
             $filteredLinks = $this->filterUrlList($requestUrlFilter, $links, 'OR');
             $foundUrls = $this->getList(self::DATA_TYPE_CRAWLER_FOUND_RAW);
+            
             foreach ($filteredLinks as $l) {
                 // Do not add URL's already crawled
                 if (array_key_exists($this->hashString($l->url), $foundUrls)) {
