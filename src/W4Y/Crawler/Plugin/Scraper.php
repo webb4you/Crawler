@@ -45,7 +45,7 @@ class Scraper extends Harvester implements PluginInterface
      * @param string $url
      * @return boolean
      */
-    private function filterUrl($url)
+    protected function filterUrl($url)
     {
         $isValid = true;
 
@@ -70,7 +70,7 @@ class Scraper extends Harvester implements PluginInterface
      * @param string $url
      * @return boolean
      */
-    private function canBeHarvested($url)
+    protected function canBeHarvested($url)
     {
         return $this->filterUrl($url);
     }
